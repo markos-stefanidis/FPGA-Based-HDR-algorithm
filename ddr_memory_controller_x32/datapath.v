@@ -5,7 +5,7 @@
 
 
 `timescale 1 ns / 1 ps
-module ddr_mem (dq, dqs, clk, reset, uddcntl, read, dataout_p, dataout_n, 
+module datapath (dq, dqs, clk, reset, uddcntl, read, dataout_p, dataout_n, 
     datatri_p, datatri_n, dqstri_p, dqstri_n, ddrclk, datain_p, datain_n, 
     dqsc, prmbdet, lock, datavalid)/* synthesis NGD_DRC_MASK=1 */;
     input wire clk;
