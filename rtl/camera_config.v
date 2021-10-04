@@ -56,7 +56,6 @@ module camera_config(
 	
 	sccb sccb(
 		.clk_25M (clk_25M),
-		//.clk_100K (clk_100K),
 		.sccb_start (sccb_start),
 		.rst_n (rst_n),
 		.address (sccb_address),
