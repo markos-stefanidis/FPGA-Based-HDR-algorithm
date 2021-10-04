@@ -10,7 +10,7 @@ The OV7670 CMOS camera is able to produce 640x480 frames at 30fps, using RGB565 
 
 This implementation includes a DDR Memory Controller designed to be used with Infineon DDR-SDRAM, at 133MHz, CL = 2. This DDR DIMM has a 64bit data bus but, as the Mico32 board has a DDR socket with 32bit data bus, half the memory can be used.
 
-To simulate any of the Verilog files, you need to map and compile Lattice libraries into Modelsim and then simulate with the following command:
+To simulate any of the Verilog files, you need to map and compile Lattice libraries into Modelsim and then simulate using the following command:
 ```
 vsim -L ovi_ecp2 <test_bench_name>
 ```
