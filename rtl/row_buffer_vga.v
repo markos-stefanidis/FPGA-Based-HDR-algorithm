@@ -11,7 +11,7 @@ module row_buffer_vga(
 	input start_frame,
 	input start_row,
 	
-	input [1:0] change_frame,
+	input [2:0] last_frame,
 	input ram_busy,
 	
 	output [15:0] pixel_data,
@@ -82,7 +82,17 @@ module row_buffer_vga(
 			
 			
 			if(start_frame_133M && ~q_start_frame_133M) begin
-				rd_address <= ((change_frame - 1) < 2'b10) ? 25'h0 : 25'h25800;
+				case(last_frame)
+					3'b000: rd_address <= 25'h0;
+					3'b001: rd_address <= 25'h25800;
+					3'b010: rd_address <= 25'h4B000;
+					3'b011: rd_address <= 25'h70800;
+					3'b100: rd_address <= 25'h96000;
+					3'b101: rd_address <= 25'hBB800;
+					
+					default: rd_address <= 25'h0;
+				endcase
+				
 			end else if(rd_req) begin
 				rd_address <= rd_address + 4;
 			end

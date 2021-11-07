@@ -4,12 +4,15 @@ module camera_capture(
 	input [7:0] data,
 	input href,
 	input vsync,
+	input take_pic,
+	input hdr_en,
 	
-	output reg [1:0] change_frame,
+	output reg [2:0] last_frame,
 	output reg frame_done,
 	output reg [127:0] p_data,
 	output reg data_valid,
-	output reg [24:0] wr_address
+	output reg [24:0] wr_address,
+	output reg change_exp
 	
 );
 
@@ -17,11 +20,13 @@ module camera_capture(
 	//Frame starts when vsync goes low. Row starts when href goes high.
 	//The DDR memory reads/writes 128bit of data, so 8 pixels need to be captured before writing them to memory
 
-
+	
 	reg STATE;
 	reg [3:0] byte_counter;
 	reg q_vsync;
-
+	reg q_href;
+	reg [9:0] row;
+	reg exp_done;
 
 	localparam IDLE = 0;
 	localparam CAPTURE = 1;
@@ -29,16 +34,19 @@ module camera_capture(
 	
 
 	always @ (posedge p_clk) begin
-		if(~rst_n) begin
+		if(~rst_n || take_pic) begin
 			byte_counter <= 4'b1111;
 			STATE <= IDLE;
 			p_data <= 128'b0;
 			data_valid <= 1'b0;
 			frame_done <= 1'b0;
 			wr_address <= 25'b0;
-			change_frame <= 2'b0;
+			row <= 10'b0;
+			change_exp <= 1'b0;
+			exp_done <= 1'b0;
 		end else begin
 			
+			q_href <= href;
 			q_vsync <= vsync;
 			
 			frame_done <= q_vsync && (~vsync);
@@ -47,15 +55,34 @@ module camera_capture(
 			
 				IDLE: begin
 					STATE <= (!vsync) ? CAPTURE : IDLE;
+					if(hdr_en) begin
+						exp_done <= (!vsync) ? 1'b0 : exp_done;
+					end else begin
+						exp_done <= 1'b1;
+					end
 					byte_counter <= 4'b1111;
-					wr_address <= (~change_frame[0]) ? 25'h0 : 25'h25800;
-					change_frame <=(~vsync) ? change_frame + 1 : change_frame;
+					//wr_address <= (last_frame) ? 25'h0 : 25'h25800;
+					case(last_frame)
+						3'b000: wr_address <= 25'h0;
+						3'b001: wr_address <= 25'h25800;
+						3'b010: wr_address <= 25'h4B000;
+						3'b011: wr_address <= 25'h70800;
+						3'b100: wr_address <= 25'h96000;
+						3'b101: wr_address <= 25'hBB800;
+						
+						default: wr_address <= 25'h0;
+					endcase
+					row <= 10'b0;
 				end
 				
 				CAPTURE: begin
 					STATE <= (vsync) ? IDLE : CAPTURE;
 					
 					wr_address <= (data_valid) ? wr_address + 4 : wr_address;
+					
+					if(q_href && ~href) begin
+						row <= row + 1;
+					end
 					
 					if(href) begin
 						
@@ -81,9 +108,30 @@ module camera_capture(
 							
 					end else begin
 						data_valid <= 1'b0;
+					end					
+					
+					if(row == 480 && ~exp_done) begin
+						change_exp <= 1'b1;
+						exp_done <= 1'b1;
+					end else begin
+						change_exp <= 1'b0;
 					end
 				end
 			endcase
+		end
+	end
+	
+	always@(posedge p_clk) begin
+		if(~rst_n) begin
+			last_frame <= 3'b0;                                  //last_frame = 0 means that camera is writing the second frame (0x25800). last_frame = 1 means camera is writing the first frame (0x0).
+		end else begin
+			if(frame_done) begin
+				if(last_frame < 5) begin	
+					last_frame <=  last_frame + 1;
+				end else begin
+					last_frame <= 3'b0;
+				end
+			end
 		end
 	end
 

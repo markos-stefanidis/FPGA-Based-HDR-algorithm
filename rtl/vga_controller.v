@@ -29,7 +29,6 @@ module vga_controller(
 			start_frame <= 1'b0;
 			start_row <= 1'b0;
 		end else begin
-			
 			if (h_counter < 799) begin
 				h_counter <= h_counter + 1;
 			end else begin

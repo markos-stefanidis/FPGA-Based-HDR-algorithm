@@ -32,7 +32,7 @@ module ov7670_rom(
 			22: dout <= 16'h1A_7B; //VSTOP      stop high 8 bits
 			23: dout <= 16'h03_0A; //VREF       vsync edge offset
 			24: dout <= 16'h0F_41; //COM6       reset timings
-			25: dout <= 16'h1E_00; //MVFP       disable mirror / flip //might have magic value of 03
+			25: dout <= 16'h1E_30; //MVFP       disable mirror / flip //might have magic value of 03
 			26: dout <= 16'h33_0B; //CHLF       //magic value from the internet
 			27: dout <= 16'h3C_78; //COM12      no HREF when VSYNC low
 			28: dout <= 16'h69_00; //GFIX       fix gain control
@@ -83,7 +83,8 @@ module ov7670_rom(
 			69: dout <= 16'ha8_f0; //HAECC5
 			70: dout <= 16'ha9_90; //HAECC6
 			71: dout <= 16'haa_94; //HAECC7
-			72: dout <= 16'h13_e5; //COM8, enable AGC / AEC
+			72: dout <= 16'h13_c5; //COM8, enable AGC / AEC
+			73: dout <= 16'h07_00;
 			default: dout <= 16'hFF_FF;         //mark end of ROM
 			
 		endcase

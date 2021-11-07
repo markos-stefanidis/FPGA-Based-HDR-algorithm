@@ -8,6 +8,7 @@ module top_level(
 	input conf_en,
 	input [3:0] keypad_row,
 	
+	
 	output[1:0] red,
 	output[1:0] green,
 	output[1:0] blue,
@@ -42,12 +43,16 @@ module top_level(
 	output seven_seg_G,
 	output seven_seg_DP,	
 	
+	output TX,
+	
 	output camera_rst_n,
 	
 	output addr_led,
 	output [2:0] state_led,
 	output reset_led,
-	output config_led
+	output config_led,
+	output TX_led,
+	output hdr_led
 );
 
 
@@ -161,26 +166,31 @@ module top_level(
 	wire [127:0] camera_p_data;
 	wire [24:0] camera_p_address;
 	wire camera_data_valid;
-	wire [1:0] camera_change_frame;
+	wire [2:0] camera_last_frame;
 	wire camera_frame_done;
-
-
+	wire take_pic;
+	wire hdr_en;
+	wire change_exp_24M;
+	
 	camera_capture camera_capture(
 		.p_clk (p_clk),
 		.rst_n (rst_n_24M),
 		.data (camera_data),
 		.href (camera_href),
 		.vsync (camera_vsync),
+		.take_pic (take_pic),
+		.hdr_en (hdr_en),
 		
-		.change_frame (camera_change_frame),
+		.last_frame (camera_last_frame),
 		.frame_done (camera_frame_done),
 		.p_data (camera_p_data),
 		.data_valid (camera_data_valid),
-		.wr_address (camera_p_address)
+		.wr_address (camera_p_address),
+		.change_exp (change_exp_24M)
 	);
 	
 	
-	wire [1:0] vga_change_frame;
+	wire [2:0] vga_last_frame;
 	wire ram_busy;	
 	wire [127:0] camera_wr_data;
 	wire [24:0] camera_wr_address;
@@ -192,14 +202,14 @@ module top_level(
 		
 		.p_data (camera_p_data),
 		.wr_address (camera_p_address),
-		.change_frame (camera_change_frame),
+		.last_frame (camera_last_frame),
 		.frame_done (camera_frame_done),
 		.data_valid (camera_data_valid),
 		.ram_busy (ram_busy),
 		
 		.o_p_data (camera_wr_data),
 		.o_wr_address (camera_wr_address),
-		.o_change_frame (vga_change_frame),
+		.o_last_frame (vga_last_frame),
 		.o_frame_done (),
 		.wr_req (camera_wr_req)
 	);
@@ -208,13 +218,23 @@ module top_level(
 	wire camera_config_done;
 	wire [7:0] conf_addr;
 	wire [7:0] conf_data;
+	reg q_change_exp;
+	reg change_exp_25M;
+	
+	always@(posedge clk_25M) begin
+		q_change_exp <= change_exp_24M;
+		change_exp_25M <= q_change_exp;
+	end
 	
 	camera_config camera_config(
 		.clk_25M (clk_25M),
 		.rst_n (rst_n_25M),
 		.start (sccb_start),
-		.conf_addr (conf_addr),
-		.conf_data (conf_data),
+		.i_conf_addr (conf_addr),
+		.i_conf_data (conf_data),
+		.change_exp (change_exp_25M),
+		.hdr_en (hdr_en),
+		
 		.sda (sda),
 		.scl (scl),
 		.done (camera_config_done)
@@ -271,12 +291,35 @@ module top_level(
 		
 		.start_frame (vga_start_frame),
 		.start_row (vga_start_row),
-		.change_frame (vga_change_frame),
+		.last_frame (vga_last_frame),
 		.ram_busy (ram_busy),
 		
 		.pixel_data (pixel_data),
 		.rd_address (vga_read_address),
 		.rd_req (vga_read_req)
+	);
+	
+	reg q_take_pic;
+	reg take_pic_133M;
+	
+	wire [127:0] uart_rd_data;
+	wire uart_data_valid;
+	wire uart_rd_req;
+	wire [24:0] uart_rd_address;
+	
+	uart_controller uart_controller(
+		.clk (clk_133M),
+		.rst_n (rst_n_133M),
+		.rd_data (uart_rd_data),
+		.rd_data_valid (uart_data_valid),
+		.start (take_pic_133M),
+		.last_frame (vga_last_frame),
+		.ram_busy (ram_busy),
+		
+		.rd_req (uart_rd_req),
+		.rd_address (uart_rd_address),
+		.TX (TX),
+		.busy_led (TX_led)
 	);
 	
 	
@@ -294,6 +337,9 @@ module top_level(
 		.camera_wr_data (camera_wr_data),
 		.ddr_rd_data (ddr_rd_data),
 		
+		.uart_rd_address (uart_rd_address),
+		.uart_rd_req (uart_rd_req),
+		
 		.init_done (ddr_init_done),
 		
 		.busy (ram_busy),
@@ -303,8 +349,13 @@ module top_level(
 		.ddr_address (sys_addr),
 		.ddr_wr_data (ddr_wr_data),
 		
+		.uart_rd_data (uart_rd_data),
+		.uart_data_valid (uart_data_valid),
+		
+		.uart_led (),
+		
 		.vga_read_data (vga_read_data),
-		.rd_data_valid (vga_data_valid)
+		.vga_data_valid (vga_data_valid)
 	);
 
 
@@ -338,6 +389,16 @@ module top_level(
 		.ddr_dm (ddr_dm),
 		.ddr_dqs (ddr_dqs)
 	);
+		
+	always@(posedge clk_133M) begin
+		if(~rst_n) begin
+			q_take_pic <= 1'b0;
+			take_pic_133M <= 1'b0;
+		end else begin
+			q_take_pic <= take_pic;
+			take_pic_133M <= q_take_pic;
+		end
+	end
 	
 	key_read key_read(
 		.clk (clk_25M),
@@ -349,6 +410,9 @@ module top_level(
 		.conf_addr (conf_addr),
 		.conf_data (conf_data),
 		.sccb_start (sccb_start),
+		
+		.take_pic (take_pic),
+		.hdr_en (hdr_en),
 		
 		.seven_seg_right (seven_seg_right),
 		.seven_seg_left (seven_seg_left),
@@ -365,10 +429,8 @@ module top_level(
 	);
 	
 
-	
-
-
 	assign reset_led = ~rst_n;
 	assign config_led = ~conf_en;
+	assign hdr_led = ~hdr_en;
 	
 endmodule
