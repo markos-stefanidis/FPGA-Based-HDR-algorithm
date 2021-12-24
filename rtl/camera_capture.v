@@ -50,7 +50,7 @@ module camera_capture(
 			q_href <= href;
 			q_vsync <= vsync;
 			
-			frame_done <= q_vsync && (~vsync);
+			frame_done <= ~(q_vsync) && vsync;
 		
 			case(STATE)
 			
@@ -126,7 +126,7 @@ module camera_capture(
 		if(~rst_n) begin
 			last_frame <= 3'b0;                                  //last_frame = 0 means that camera is writing the second frame (0x25800). last_frame = 1 means camera is writing the first frame (0x0).
 		end else begin
-			if(frame_done) begin
+			if((~q_vsync) && vsync) begin
 				if(last_frame < 5) begin	
 					last_frame <=  last_frame + 1;
 				end else begin

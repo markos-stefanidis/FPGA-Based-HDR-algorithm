@@ -60,33 +60,33 @@ module image_generator(
 				case(last_frame)
 										
 					3'b000: begin
-						rd_address <= 25'h70800; //Camera Writing high exp, reading low and then mid
-						rd_address_next <= 25'h96000; //Mid exp address
-					end
-					
-					3'b001: begin
 						rd_address <= 25'h96000; //Camera writing low exp, reading mid and then high
 						rd_address_next <= 25'hBB800;
 					end
 					
-					3'b010: begin
+					3'b001: begin
 						rd_address <= 25'h0; //Camera writing mid exp, reading low and then high
 						rd_address_next <= 25'hBB800;
 					end
 					
-					3'b011: begin
+					3'b010: begin
 						rd_address <= 25'h0; //Camera writing high exp, reading low and then mid
 						rd_address_next <= 25'h25800;
 					end
 					
-					3'b100: begin
+					3'b011: begin
 						rd_address <= 25'h25800; //Camera writing low exp, reading mid and then high
+						rd_address_next <= 25'h4B000;
+					end
+					
+					3'b100: begin
+						rd_address <= 25'h70800;  //Camera writing mid exp, reading low and then high
 						rd_address_next <= 25'h4B000;
 					end	
 				
 					3'b101: begin
-						rd_address <= 25'h70800;  //Camera writing mid exp, reading low and then high
-						rd_address_next <= 25'h4B000;
+						rd_address <= 25'h70800; //Camera Writing high exp, reading low and then mid
+						rd_address <= 25'h9600; //Camera writing mid exp, reading low and then high
 					end
 				
 				endcase
@@ -97,33 +97,33 @@ module image_generator(
 				case(last_frame)
 						
 					3'b000: begin
-						rd_data_low <= (last_read) ? rd_data : rd_data_low;
 						rd_data_mid <= (last_read) ? rd_data_mid : rd_data;
+						rd_data_high <= (last_read) ? rd_data : rd_data_high;
 					end
 					
 					3'b001: begin
-						rd_data_mid <= (last_read) ? rd_data : rd_data_mid;
-						rd_data_high <= (last_read) ? rd_data_high : rd_data;
+						rd_data_low <= (last_read) ? rd_data_low : rd_data;
+						rd_data_high <= (last_read) ? rd_data : rd_data_high;
 					end
 					
 					3'b010: begin
-						rd_data_low <= (last_read) ? rd_data : rd_data_low;
-						rd_data_high <= (last_read) ? rd_data_high : rd_data;
+						rd_data_low <= (last_read) ? rd_data_low : rd_data;
+						rd_data_mid <= (last_read) ? rd_data : rd_data_mid;
 					end
 					
 					3'b011: begin
-						rd_data_low <= (last_read) ? rd_data : rd_data_low;
 						rd_data_mid <= (last_read) ? rd_data_mid : rd_data;
+						rd_data_high <= (last_read) ? rd_data : rd_data_high;
 					end
 					
 					3'b100: begin
-						rd_data_mid <= (last_read) ? rd_data : rd_data_mid;
-						rd_data_high <= (last_read) ? rd_data_high : rd_data;
+						rd_data_low <= (last_read) ? rd_data_low : rd_data;
+						rd_data_high <= (last_read) ? rd_data : rd_data_high;
 					end	
 				
 					3'b101: begin
-						rd_data_low <= (last_read) ? rd_data : rd_data_low;
-						rd_data_high <= (last_read) ? rd_data_high : rd_data;
+						rd_data_low <= (last_read) ? rd_data_low : rd_data;
+						rd_data_mid <= (last_read) ? rd_data : rd_data_mid;
 					end
 				endcase
 				last_read <= ~last_read;
@@ -133,27 +133,27 @@ module image_generator(
 				case(last_frame)
 						
 					3'b000: begin
-						rd_data_high <= camera_data;
+						rd_data_low <= camera_data;
 					end
 					
 					3'b001: begin
-						rd_data_low <= camera_data;
+						rd_data_mid <= camera_data;
 					end
 					
 					3'b010: begin
-						rd_data_mid <= camera_data;
-					end
-					
-					3'b011: begin
 						rd_data_high <= camera_data;
 					end
 					
-					3'b100: begin
+					3'b011: begin
 						rd_data_low <= camera_data;
+					end
+					
+					3'b100: begin
+						rd_data_mid <= camera_data;
 					end	
 				
 					3'b101: begin
-						rd_data_mid <= camera_data;
+						rd_data_high <= camera_data;
 					end	
 				endcase
 				
@@ -174,8 +174,7 @@ module image_generator(
 				rd_req <= 1'b0;
 			end
 
-			all_read <= camera_wr_req;
-			
+			all_read <= camera_wr_req; 
 		end	
 	end
 
