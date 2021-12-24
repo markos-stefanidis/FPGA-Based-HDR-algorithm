@@ -234,6 +234,7 @@ module top_level(
 		.i_conf_data (conf_data),
 		.change_exp (change_exp_25M),
 		.hdr_en (hdr_en),
+		.last_frame (camera_last_frame),
 		
 		.sda (sda),
 		.scl (scl),

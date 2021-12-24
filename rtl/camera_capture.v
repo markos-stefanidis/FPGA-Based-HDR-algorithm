@@ -44,6 +44,7 @@ module camera_capture(
 			row <= 10'b0;
 			change_exp <= 1'b0;
 			exp_done <= 1'b0;
+			q_vsync <= 1'b0;
 		end else begin
 			
 			q_href <= href;

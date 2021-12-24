@@ -5,38 +5,29 @@ module key_pad(
 	input [3:0] row,	
 	
 	output reg [3:0] key_code,
-	output reg [2:0] col,
+	output [2:0] col,
 	output reg key_ready
 );
-
-	// This module is responsible for reading data from a 3x4 keypad matrix. The 3 collumns are being polled with a 100us period.
-	// The layout of the keypad matrix is as follows:
-	//
-	//			COLLUMNS
-	//			2   1   0
-	//
-	//	ROW 3	1	2	3
-	//	ROW 2	4	5	6
-	//	ROW 1	7	8	9
-	//	ROW 0	C	0	E
-	//		
-	
-	
-	
-	
 
 	localparam SCAN = 0;
 	localparam DECODE = 1;
 	localparam IDLE = 2;
+	localparam WAIT_RELEASE = 3;
 	localparam CLK_FREQ = 25000000;
 	localparam POLL_FREQ = 10000;
 
+
 	wire [3:0] sum;
-	reg STATE;
+	reg [1:0] STATE;
 	reg [11:0] data;
 	reg [12:0] wait_counter;
 	reg wait_100us;
 	reg wait_rst;
+	reg [2:0] reg_col;
+	
+	assign col = reg_col;
+	
+	
 	assign sum = data[0] + data[1] + data[2]  + data[3]  + 
 				 data[4] + data[5] + data[6]  + data[7]  + 
 				 data[8] + data[9] + data[10] + data[11];
@@ -45,7 +36,7 @@ module key_pad(
 		if(~rst_n) begin
 			STATE <= IDLE;
 			key_code <= 4'b0;
-			col <= 3'b0;
+			reg_col <= 3'b0;
 			key_ready <= 1'b0;
 			data <= 12'b0;
 			wait_rst <= 1'b0;
@@ -57,32 +48,35 @@ module key_pad(
 					
 					if(wait_100us) begin
 					
-						case(col)
+						case(reg_col)
 							
 							3'b100: begin
 								data[11:8] <= row;
-								col <= 3'b010;
+								reg_col <= 3'b010;
 								wait_rst <= 1'b1;
 							end
 							
 							3'b010: begin
 								data[7:4] <= row;
-								col <= 3'b001;
+								reg_col <= 3'b001;
 								wait_rst <= 1'b1;
 							end
 							
 							3'b001: begin
 								data[3:0] <= row;
-								col <= 3'b100;
+								reg_col <= 3'b111;
 								wait_rst <= 1'b1;
-								STATE <= DECODE;
+								STATE <= WAIT_RELEASE;
 							end
 						
 						endcase
 					end else begin
 						wait_rst <= 1'b0;
-						col <= 3'b100;
 					end
+				end
+				
+				WAIT_RELEASE: begin
+					STATE <= (row == 3'b0) ? DECODE : WAIT_RELEASE;
 				end
 				
 				DECODE: begin
@@ -111,9 +105,11 @@ module key_pad(
 						STATE <= IDLE;						
 					end else begin
 						key_ready <= 1'b0;
+						reg_col <= 3'b100;
 						STATE <= SCAN;
 						wait_rst <= 1'b1;
 					end
+					data <= 12'b0;
 				end
 				
 				IDLE: begin
@@ -121,11 +117,12 @@ module key_pad(
 						STATE <= SCAN;
 						wait_rst <= 1'b1;
 						key_ready <= 1'b0;
-						col <= 3'b100;
+						reg_col <= 3'b100;
 					end else begin
-						col <= 3'b000;
+						reg_col <= 3'b000;
 						wait_rst <= 1'b1;
 					end
+					data <= 12'b0;
 				end
 			
 			endcase
@@ -138,7 +135,7 @@ module key_pad(
 			wait_counter <= 13'b0;
 			wait_100us <= 1'b0;
 		end else begin
-			wait_counter <= (wait_counter < (CLK_FREQ/POLL_FREQ - 1)) ? wait_counter + 1 : wait_counter; 
+			wait_counter <= (wait_counter < (CLK_FREQ/POLL_FREQ)) ? wait_counter + 1 : wait_counter; 
 			wait_100us <= (wait_counter == (CLK_FREQ/POLL_FREQ - 1));
 		end
 	end
