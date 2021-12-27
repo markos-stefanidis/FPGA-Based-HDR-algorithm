@@ -6,11 +6,17 @@ module ram_fifo(
 	input camera_wr_req,
 	input vga_read_req,
 	input ddr_data_valid,
+	input hdr_rd_req,	
+	input hdr_wr_req,
 	
 	input [24:0] camera_wr_address,
 	input [24:0] vga_read_address,
 	input [127:0] camera_wr_data,
 	input [127:0] ddr_rd_data,
+	
+	input [24:0] hdr_rd_address,
+	input [24:0] hdr_wr_address,
+	input [127:0] hdr_wr_data,
 
 	input [24:0] uart_rd_address,
 	input uart_rd_req,
@@ -23,6 +29,9 @@ module ram_fifo(
 	
 	output reg [24:0] ddr_address,
 	output reg [127:0] ddr_wr_data,
+
+	output reg [127:0] hdr_rd_data,
+	output reg hdr_rd_valid,
 	
 	output reg [127:0] uart_rd_data,
 	output reg uart_data_valid,
