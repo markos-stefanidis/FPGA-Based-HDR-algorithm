@@ -12,7 +12,7 @@ module w
 	output reg [7:0] w_low
 );
 
-	localparam MAX = (2**N) - 1;
+	localparam MAX = (2**N);
 
 	always@(posedge clk) begin
 		if(~rst_n) begin
