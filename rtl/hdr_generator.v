@@ -33,8 +33,6 @@ module image_generator(
 	reg [127:0] rd_data_low; 			
 	reg last_read;
 
-	wire hdr_ready;
-
 	localparam N = 8;
 	localparam FP = 4;
 	
@@ -91,7 +89,7 @@ module image_generator(
 				
 				endcase
 				last_read <= 1'b0;
-			end else if(rd_valid) begin
+			end else if(rd_req) begin
 				rd_address <= rd_address_next;
 				rd_address_next <= rd_address + 4;
 				case(last_frame)
@@ -159,7 +157,7 @@ module image_generator(
 				
 			end
 			
-			if(frame_done || ((rd_valid || reg_rd_req)&& ~last_read) || camera_wr_req)  begin 
+			if(frame_done || ((rd_valid || reg_rd_req) && all_read)|| ((rd_req) && ~last_read) || camera_wr_req)  begin 
 				if(~ram_busy && ~row_done) begin
 					rd_req <= 1'b1;
 					reg_rd_req <= 1'b0;
@@ -174,15 +172,19 @@ module image_generator(
 				rd_req <= 1'b0;
 			end
 
-			all_read <= camera_wr_req; 
+			all_read <= camera_wr_req;
 		end	
 	end
 
 	reg [15:0] pixel_data_high;
 	reg [15:0] pixel_data_mid;
 	reg [15:0] pixel_data_low;
-	reg [4:0] pixel_counter;
 	reg hdr_start;
+	reg STATE;
+	reg [2:0] pixel_counter;
+
+	localparam WAITING_DATA = 0;
+	localparam PROCESSING = 1;
 	
 	always@(posedge clk) begin
 		if(~rst_n) begin
@@ -191,9 +193,18 @@ module image_generator(
 			pixel_data_low <= 16'b0;
 			pixel_counter <= 3'b0;
 			hdr_start <= 1'b0;
+			STATE <= WAITING_DATA;
 		end else begin
-			if(all_read) begin
-				if(hdr_ready) begin
+			case(STATE)
+
+				WAITING_DATA: begin
+					STATE <= (all_read) ? PROCESSING : WAITING_DATA;
+					pixel_counter <= 3'b0;
+					hdr_start <= all_read;
+
+				end
+
+				PROCESSING: begin
 					case(pixel_counter)
 
 						3'b000: begin
@@ -245,12 +256,10 @@ module image_generator(
 						end	
 
 					endcase
-					hdr_start <= 1'b1;
 					pixel_counter <= pixel_counter + 1;
-				end else begin
-					hdr_start <= 1'b0;
+					STATE <= (pixel_counter == 3'b111) ? WAITING_DATA : PROCESSING;
 				end
-			end
+			endcase
 		end
 	end
 
@@ -304,7 +313,6 @@ module image_generator(
 		.lE_red (lE_red),
 		.lE_green (lE_green),
 		.lE_blue (lE_blue),
-		.hdr_ready (hdr_ready),
 		.hdr_done (hdr_done)
 	);	
 endmodule

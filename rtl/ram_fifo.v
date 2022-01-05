@@ -47,7 +47,7 @@ module ram_fifo(
 	// ram_busy is asserted when the in_fifo is almost full, or when 2 requests arrive at once. After sorting them, in_fifo is ready to accept new requests.
 
 
-
+	wire [4:0] requests;
 	wire rst;
 	
 	wire in_full;
@@ -57,18 +57,27 @@ module ram_fifo(
 	wire mod_empty;
 	wire mod_full;
 	
-	reg [155:0] in_wr_data;
-	reg in_wr_en;
-	reg [155:0] in_wr_next;
-	reg in_wr_next_en;
+	reg [155:0] in_wr_data_0;
+	reg in_wr_req_0;
+	reg [155:0] in_wr_data_1;
+	reg in_wr_req_1;
+	reg [155:0] in_wr_data_2;
+	reg in_wr_req_2;
+	reg [155:0] in_wr_data_3;
+	reg in_wr_req_3;
 	
-	reg [1:0] wr_mod;
-	reg [1:0] wr_mod_next;
-	wire [1:0] rd_mod;
-	reg wr_mod_en;
-	reg wr_mod_en_next;
+	//wr_mod
+	//01     |  VGA
+	//10     |  UART
+	//11     |  HDR
+	
+	reg [1:0] wr_mod_0;
+	reg [1:0] wr_mod_1;
+	reg wr_mod_req_0;
+	reg wr_mod_req_1;
 	wire rd_mod_en;
-	
+	wire [1:0] rd_mod;
+
 	reg q_ddr_data_valid;
 	
 	reg reg_led;
@@ -79,29 +88,33 @@ module ram_fifo(
 	
 	assign rd_mod_en = ddr_data_valid;	
 	assign rst = ~rst_n_133M;
-	assign busy = in_almost_full || in_wr_next_en || mod_full;
+	assign busy = in_almost_full || in_wr_req_1 || mod_full;
 	assign in_rd_en = (init_done && ~(in_empty || cmd_busy || cmd_valid || q_in_rd_en));
 	assign uart_led = reg_led;
+	assign requests = {hdr_rd_req, camera_wr_req, hdr_wr_req, vga_read_req, uart_rd_req}; 
 	
 	always@(posedge clk_133M) begin
 		if(~rst_n_133M) begin
 			ddr_address <= 25'b0;
 			ddr_wr_data <= 128'b0;
 	
-			in_wr_data <= 156'b0;
-			in_wr_en <= 1'b0;
-			in_wr_next <= 156'b0;
-			in_wr_next_en <= 1'b0;
+			in_wr_data_0 <= 156'b0;
+			in_wr_data_1 <= 156'b0;
+			in_wr_data_2 <= 156'b0;
+			in_wr_data_3 <= 156'b0;
+			in_wr_req_0 <= 1'b0;
+			in_wr_req_1 <= 1'b0;
+			in_wr_req_2 <= 1'b0;
+			in_wr_req_3 <= 1'b0;
 			
 			q_in_rd_en <= 1'b0;
 			
-			wr_mod <= 2'b0;
-			wr_mod_en <= 1'b0;
+			wr_mod_0 <= 2'b0;
+			wr_mod_1 <= 2'b0;
+			wr_mod_req_0 <= 1'b0;
+			wr_mod_req_1 <= 1'b0;
 			
 			reg_led <= 1'b1;
-			
-			wr_mod_next <= 2'b0;
-			wr_mod_en_next <= 1'b0;
 		end else begin
 			
 			q_in_rd_en <= in_rd_en;
@@ -113,94 +126,282 @@ module ram_fifo(
 			
 			if(init_done) begin
 				if(~in_full) begin
-				
-					if (vga_read_req && uart_rd_req) begin
-						in_wr_data <= {4'b0011, 128'b0, uart_rd_address};
-						in_wr_en <= 1'b1;
-						
-						wr_mod <= 2'b10;
-						wr_mod_en <= 1'b1;
-						
-						in_wr_next <= {4'b0011, 128'b0, vga_read_address};
-						in_wr_next_en <= 1'b1;
-						wr_mod_next <= 2'b01;
-						wr_mod_en_next <= 1'b1;
-					end else if(vga_read_req && camera_wr_req) begin
-						in_wr_data <= {4'b0100, camera_wr_data, camera_wr_address};
-						in_wr_en <= 1'b1;
-						
-						in_wr_next <= {4'b0011, 128'b0, vga_read_address};
-						wr_mod_next <= 2'b01;
-						in_wr_next_en <= 1'b1;
-						
-					end else if (vga_read_req) begin				
-						if(in_wr_next_en) begin
-							in_wr_data <= in_wr_next;
-							in_wr_en <= in_wr_next_en;
+					case (requests)
+
+						5'b11110: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
+							in_wr_data_2 <= {4'b0100, hdr_wr_data, hdr_wr_address};
+							in_wr_data_3 <= {4'b0011, 128'b0, vga_read_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b1;
+							in_wr_req_3 <= 1'b1;
+
+							wr_mod_0 <= 2'b01;
+							wr_mod_1 <= 2'b11;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b1;
+						end
+
+						5'b11100: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
+							in_wr_data_2 <= {4'b0100, hdr_wr_data, hdr_wr_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b1;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b11;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b11010: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
+							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b1;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 1'b11;
+							wr_mod_1 <= 1'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b1;
+						end
+
+						5'b11000: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b11;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b10110: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
+							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b1;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b11;
+							wr_mod_1 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b1;
+						end
+
+						5'b10100: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b11;
 							
-							wr_mod <= wr_mod_next;
-							wr_mod_en <= wr_mod_en_next;
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b10010: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_req};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b11;
+							wr_mod_1 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b1;
+						end
+
+						5'b10000: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b0;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
 							
-							in_wr_next <= {4'b0011, 128'b0, vga_read_address};
-							in_wr_next_en <= 1'b1;
-							wr_mod_next <= 2'b01;
-							wr_mod_en_next <= 1'b1;
-						end else begin
-							
-							in_wr_data <= {4'b0011, 128'b0, vga_read_address};
-							in_wr_en <= 1'b1;
-							
-							wr_mod <= 2'b01;
-							wr_mod_en <= 1'b1;
+							wr_mod_0 <= 2'b11;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
 						end
 						
-					end else if (uart_rd_req) begin
-						if(in_wr_next_en) begin
-							in_wr_data <= in_wr_next;
-							in_wr_en <= in_wr_next_en;
-							
-							wr_mod <= wr_mod_next;
-							wr_mod_en <= wr_mod_en_next;
-							
-							in_wr_next <= {4'b0011, 128'b0, uart_rd_address};
-							in_wr_next_en <= 1'b1;
-							wr_mod_next <= 2'b10;
-							wr_mod_en_next <= 1'b1;
-						end else begin
-							
-							in_wr_data <= {4'b0011, 128'b0, uart_rd_address};
-							in_wr_en <= 1'b1;
-							
-							wr_mod <= 2'b10;
-							wr_mod_en <= 1'b1;
+						5'b01110: begin
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
+							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
+							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b1;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
 						end
+
+						5'b01100: begin
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
+							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_req_0 <= 1'b0;
+							wr_mod_req_1 <= 1'b0;
 						
-					end else if (camera_wr_req) begin
-						if(in_wr_next_en) begin
-							in_wr_data <= in_wr_next;
-							in_wr_en <= in_wr_next_en;
+						end
+
+						5'b01010: begin
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
+							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b01000: begin
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};		
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b0;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_req_0 <= 1'b0;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b00110: begin
+							in_wr_data_0 <= {4'b0100, hdr_wr_data, hdr_wr_address};
+							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b00100: begin
+							in_wr_data_0 <= {4'b0100, hdr_wr_data, hdr_wr_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b0;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_req_0 <= 1'b0;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b00010: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, vga_read_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b0;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b01;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						5'b00011: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, vga_read_address};
+							in_wr_data_1 <= {4'b0011, 128'b0, uart_rd_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b1;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
 							
-							wr_mod <= wr_mod_next;
-							wr_mod_en <= wr_mod_en_next;
-							
-							in_wr_next <= {4'b0100, camera_wr_data, camera_wr_address};
-							in_wr_next_en <= 1'b1;
-						end else begin
-							in_wr_data <= {4'b0100, camera_wr_data, camera_wr_address};
-							in_wr_en <= 1'b1;
-						end						
-					end else begin
-						in_wr_data <= in_wr_next;
-						in_wr_en <= in_wr_next_en;
-						
-						wr_mod <= wr_mod_next;
-						wr_mod_en <= wr_mod_en_next;
-						
-						wr_mod_en_next <= 1'b0;
-						
-						in_wr_next_en <= 1'b0;
-					end
-					
+							wr_mod_0 <= 2'b01;
+							wr_mod_1 <= 2'b10;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b1;
+						end
+
+						5'b00010: begin
+							in_wr_data_0 <= {4'b0011, 128'b0, uart_rd_address};
+
+							in_wr_req_0 <= 1'b1;
+							in_wr_req_1 <= 1'b0;
+							in_wr_req_2 <= 1'b0;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= 2'b10;
+
+							wr_mod_req_0 <= 1'b1;
+							wr_mod_req_1 <= 1'b0;
+						end
+
+						default: begin
+							in_wr_data_0 <= in_wr_data_1;     	
+							in_wr_data_1 <= in_wr_data_2;
+							in_wr_data_2 <= in_wr_data_3;
+							in_wr_data_3 <= 155'b0;
+
+							in_wr_req_0 <= in_wr_req_1;
+							in_wr_req_1 <= in_wr_req_2;
+							in_wr_req_2 <= in_wr_req_3;
+							in_wr_req_3 <= 1'b0;
+
+							wr_mod_0 <= wr_mod_1;
+							wr_mod_1 <= 2'b0;
+
+							wr_mod_req_0 <= wr_mod_req_1;
+							wr_mod_req_1 <= 1'b0;
+						end
+					endcase
 				end					
 			end
 			
@@ -222,10 +423,16 @@ module ram_fifo(
 						uart_rd_data <= ddr_rd_data;
 						uart_data_valid <= 1'b1;
 					end					
+
+					2'b11: begin
+						hdr_rd_data <= ddr_rd_data;	
+						hdr_rd_valid <= 1'b1;
+					end
 				endcase				
 			end	else begin
 				vga_data_valid <= 1'b0;
 				uart_data_valid <= 1'b0;
+				hdr_rd_valid <= 1'b0;
 			end
 		end
 	
@@ -233,9 +440,9 @@ module ram_fifo(
 		
 	
 	fifo_in fifo_in(
-		.Data (in_wr_data),
+		.Data (in_wr_data_0),
 		.Clock (clk_133M), 
-		.WrEn (in_wr_en), 
+		.WrEn (in_wr_req_0), 
 		.RdEn (in_rd_en), 
 		.Reset (rst), 
 		.Q (in_rd_data),
@@ -247,9 +454,9 @@ module ram_fifo(
 	);
 	
 	fifo_out_addr fifo_out_addr(
-		.Data (wr_mod),
+		.Data (wr_mod_0),
 		.Clock (clk_133M),
-		.WrEn (wr_mod_en),
+		.WrEn (wr_mod_req_0),
 		.RdEn (rd_mod_en),
 		.Reset (rst), 
 		.Q (rd_mod),

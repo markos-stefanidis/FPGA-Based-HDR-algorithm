@@ -23,11 +23,10 @@ module hdr
 //	input [15:0] exp_mid,
 //	input [15:0] exp_low,
 	
-	output [N-1:0] lE_red,	
-	output [N-1:0] lE_green,	
-	output [N-1:0] lE_blue,
+	output reg [N-1:0] lE_red,	
+	output reg [N-1:0] lE_green,	
+	output reg [N-1:0] lE_blue,
 
-	output reg hdr_ready,
 	output reg hdr_done
 );
 	wire [N-1:0] g_red_high;
@@ -55,6 +54,9 @@ module hdr
 	wire [N-1:0] w_blue_low;
 
 	wire lut_rst;
+	wire [N-1:0] w_lE_red;
+	wire [N-1:0] w_lE_green;
+	wire [N-1:0] w_lE_blue;
 
 	assign lut_rst = ~rst_n;
 
@@ -218,10 +220,12 @@ module hdr
 	reg stage2;
 	always@(posedge clk) begin
 		if(~rst_n) begin
-			hdr_ready <= 1'b1;
 			stage1 <= 1'b0;
 			stage2 <= 1'b0;
 			hdr_done <= 1'b0;
+			lE_red <= 0;
+			lE_green <= 0;
+			lE_blue <= 0;
 		end else begin
 			stage1 <= hdr_start;
 			stage2 <= stage1;
@@ -236,7 +240,9 @@ module hdr
 			sum_blue <= w_blue_diff_high + w_blue_diff_low + w_blue_diff_mid;
 			w_sum_blue <= w_blue_high + w_blue_low + w_blue_mid;
 
-			
+			lE_red <= w_lE_red;
+			lE_green <= w_lE_red;
+			lE_blue <= w_lE_red;
 		end
 
 	end
@@ -278,7 +284,7 @@ module hdr
 	(
 		.A (sum_red),
 		.B (w_sum_red),
-		.OUT (lE_red),
+		.OUT (w_lE_red),
 		.ovrflow (),
 		.inv ()
 	);
@@ -287,7 +293,7 @@ module hdr
 	(
 		.A (sum_green),
 		.B (w_sum_green),
-		.OUT (lE_green),
+		.OUT (w_lE_green),
 		.ovrflow (),
 		.inv ()
 	);
@@ -296,7 +302,7 @@ module hdr
 	(
 		.A (sum_blue),
 		.B (w_sum_blue),
-		.OUT (lE_blue),
+		.OUT (w_lE_blue),
 		.ovrflow (),
 		.inv ()
 	);
