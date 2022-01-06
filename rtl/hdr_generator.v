@@ -291,7 +291,7 @@ module image_generator(
 	assign blue_mid = pixel_data_mid[12:8];
 	assign blue_low = pixel_data_low[12:8];
 
-	hdr #(.N(N), .FP(FP)) hdr
+	hdr hdr
 	(
 		.clk (clk),
 		.rst_n (rst_n),

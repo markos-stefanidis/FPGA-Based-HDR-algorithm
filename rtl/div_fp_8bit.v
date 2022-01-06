@@ -18,7 +18,7 @@ module div_fp_8bit
 	assign FP_A = (A << FP);
 	assign FP_B = B;
 	
-	div div(
+	div_8bit div(
 		.A (FP_A),
 		.B (FP_B),
 		
@@ -26,8 +26,6 @@ module div_fp_8bit
 		.R (R),
 		.inv (inv)
 	);
-	
-	defparam div.N = N + FP;
 	
 	
 	assign ovrflow = |(Q[N+FP-1:N]);

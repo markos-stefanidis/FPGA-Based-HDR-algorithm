@@ -1,6 +1,6 @@
 module hdr
-	#(parameter N,
-	  parameter FP)
+//	#(parameter N,
+//	  parameter FP)
 (
  	input clk,
 	input rst_n,
@@ -23,12 +23,16 @@ module hdr
 //	input [15:0] exp_mid,
 //	input [15:0] exp_low,
 	
-	output reg [N-1:0] lE_red,	
-	output reg [N-1:0] lE_green,	
-	output reg [N-1:0] lE_blue,
+	output reg [7:0] lE_red,	
+	output reg [7:0] lE_green,	
+	output reg [7:0] lE_blue,
 
 	output reg hdr_done
 );
+
+	localparam N = 8;
+	localparam FP = 4;
+
 	wire [N-1:0] g_red_high;
 	wire [N-1:0] g_red_mid;
 	wire [N-1:0] g_red_low;
@@ -88,7 +92,7 @@ module hdr
 		.Q (g_red_low)
 	);
 
-	w #(.N(5)) W_red
+	w_five W_red
 	(
 		.clk (clk),
 		.rst_n (rst_n),
@@ -129,7 +133,7 @@ module hdr
 	
 	
 	
-	w #(.N(6)) W_green
+	w_six W_green
 	(
 	 	.clk (clk),
 		.rst_n (rst_n),
@@ -168,7 +172,7 @@ module hdr
 	);
 
 
-	w #(.N(5)) W_blue
+	w_five W_blue
 	(
 	 	.clk (clk),
 		.rst_n (rst_n),
@@ -280,7 +284,7 @@ module hdr
 //	assign sum_blue = w_blue_diff_high + w_blue_diff_low + w_blue_diff_mid;
 //	assign w_sum_blue = w_blue_high + w_blue_low + w_blue_mid;
 
-	div_fp #(.N(N), .FP(FP)) div_red 
+	div_fp_8bit div_red 
 	(
 		.A (sum_red),
 		.B (w_sum_red),
@@ -289,7 +293,7 @@ module hdr
 		.inv ()
 	);
 
-	div_fp #(.N(N), .FP(FP)) div_green 
+	div_fp_8bit div_green 
 	(
 		.A (sum_green),
 		.B (w_sum_green),
@@ -298,7 +302,7 @@ module hdr
 		.inv ()
 	);
 
-	div_fp #(.N(N), .FP(FP)) div_blue
+	div_fp_8bit div_blue
 	(
 		.A (sum_blue),
 		.B (w_sum_blue),

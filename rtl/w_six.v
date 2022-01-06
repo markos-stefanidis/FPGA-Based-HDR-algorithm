@@ -1,16 +1,17 @@
-module w
+module w_six
 (	input clk,
 	input rst_n,	
 	input start,
- 	input [7:0] pixel_high,
-	input [7:0] pixel_mid,
-	input [7:0] pixel_low,
+ 	input [5:0] pixel_high,
+	input [5:0] pixel_mid,
+	input [5:0] pixel_low,
 
 	output reg [7:0] w_high,
 	output reg [7:0] w_mid,
 	output reg [7:0] w_low
 );
 
+	localparam N = 6;
 	localparam MAX = (2**N);
 
 	always@(posedge clk) begin

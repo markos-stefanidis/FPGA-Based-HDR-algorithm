@@ -172,8 +172,8 @@ module ram_fifo(
 							in_wr_req_2 <= 1'b1;
 							in_wr_req_3 <= 1'b0;
 
-							wr_mod_0 <= 1'b11;
-							wr_mod_1 <= 1'b01;
+							wr_mod_0 <= 2'b11;
+							wr_mod_1 <= 2'b01;
 
 							wr_mod_req_0 <= 1'b1;
 							wr_mod_req_1 <= 1'b1;
