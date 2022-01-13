@@ -14,10 +14,10 @@ module image_generator(
 	input camera_wr_req,
 
 	output reg rd_req,
-	output reg wr_req,
+	output wr_req,
 	output reg [24:0] rd_address,
-	output reg [24:0] wr_address,
-	output reg [127:0] wr_data
+	output [24:0] wr_address,
+	output [127:0] wr_data
 );
 
 	reg [6:0] data_counter;
@@ -33,19 +33,16 @@ module image_generator(
 	reg [127:0] rd_data_low; 			
 	reg last_read;
 
-	localparam N = 8;
-	localparam FP = 4;
+	localparam N = 12;
+	localparam FP = 8;
 	
 	always@(posedge clk) begin
 		if(~rst_n) begin
-			wr_data <= 128'b0;
 			rd_address <= 25'b0;
-			wr_address <= 25'b0;
 			rd_data_high <= 128'b0;
 			rd_data_mid <= 128'b0;
 			rd_data_low <= 128'b0; 			
 			rd_req <= 1'b0;
-			wr_req <= 1'b0;
 			data_counter <= 7'b0;
 			last_req <= 2'b11;			
 			req_all <= 1'b0;
@@ -92,6 +89,16 @@ module image_generator(
 			end else if(rd_req) begin
 				rd_address <= rd_address_next;
 				rd_address_next <= rd_address + 4;
+				last_read <= ~last_read;
+			end
+
+			if(frame_done) begin
+				last_read <= 1'b0;
+			end else if (rd_valid) begin
+				last_read <= ~last_read;
+			end
+
+			if(rd_valid) begin
 				case(last_frame)
 						
 					3'b000: begin
@@ -124,7 +131,7 @@ module image_generator(
 						rd_data_mid <= (last_read) ? rd_data : rd_data_mid;
 					end
 				endcase
-				last_read <= ~last_read;
+
 			end
 
 			if(camera_wr_req) begin
@@ -275,9 +282,9 @@ module image_generator(
 	wire [4:0]  blue_mid;	
 	wire [4:0]  blue_low;	
 
-	wire [7:0] lE_red;
-	wire [7:0] lE_blue;
-	wire [7:0] lE_green;
+	wire [N-1:0] lE_red;
+	wire [N-1:0] lE_blue;
+	wire [N-1:0] lE_green;
 
 	assign red_high = pixel_data_high[7:3];
 	assign red_mid = pixel_data_mid[7:3];
@@ -315,4 +322,23 @@ module image_generator(
 		.lE_blue (lE_blue),
 		.hdr_done (hdr_done)
 	);	
+
+	tone_map tone_map(
+		.clk (clk),
+		.rst_n (rst_n),
+		
+		.hdr_done (hdr_done),
+		.lE_red (lE_red),
+		.lE_green (lE_green),
+		.lE_blue (lE_blue),
+
+		.frame_done (frame_done),
+
+		.ram_busy (ram_busy),
+
+		.last_frame (last_frame),
+		.wr_data (wr_data),
+		.wr_req (wr_req)
+	);
+
 endmodule

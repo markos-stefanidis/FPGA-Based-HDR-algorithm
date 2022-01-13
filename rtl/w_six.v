@@ -6,9 +6,9 @@ module w_six
 	input [5:0] pixel_mid,
 	input [5:0] pixel_low,
 
-	output reg [7:0] w_high,
-	output reg [7:0] w_mid,
-	output reg [7:0] w_low
+	output reg [11:0] w_high,
+	output reg [11:0] w_mid,
+	output reg [11:0] w_low
 );
 
 	localparam N = 6;
