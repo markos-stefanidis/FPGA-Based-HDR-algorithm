@@ -20,6 +20,9 @@ module tone_map(
 	localparam FP = 8;
 	localparam N = 307200 << FP;
 	localparam a = 46;
+	localparam max_red = 31 << FP;
+	localparam max_green = 63 << FP;
+	localparam max_blue = 31 << FP;
 	
 	reg [31:0] slE_red;
 	reg [31:0] slE_green;
@@ -89,8 +92,8 @@ module tone_map(
 			gE_ready <= gE_sum_ready;
 		
 			E_ready <= hdr_done;
-			allE_ready <= E_ready;
-			div_ready <= allE_ready;
+			//allE_ready <= E_ready;
+			div_ready <= E_ready;
 			D_ready <= div_ready;
 		
 			if (hdr_done) begin
@@ -119,22 +122,22 @@ module tone_map(
 				E_blue <= exp_out_blue;
 			end
 		
-			if (allE_ready) begin
-				divE_red <= (aE_red << FP) / exp_out_red + 1;
-				divE_green <= (aE_green << FP) / exp_out_green + 1;
-				divE_blue <= (aE_blue << FP) / exp_out_blue + 1;
+			if (E_ready) begin
+				divE_red <= (aE_red << FP) / exp_out_red + 256;
+				divE_green <= (aE_green << FP) / exp_out_green + 256;
+				divE_blue <= (aE_blue << FP) / exp_out_blue + 256;
 			end
 		
 			if(div_ready) begin
-				D_red <= (31 << FP)/divE_red;
-				D_green <= (63 << FP)/divE_green;
-				D_blue <= (31 << FP)/divE_blue;
+				D_red <= (max_red << FP)/divE_red;
+				D_green <= (max_green << FP)/divE_green;
+				D_blue <= (max_blue << FP)/divE_blue;
 			end
 		
 	/*	
 			if(gE_sum_ready) begin
 			        exp_in_red <= glE_red[12:0];
-			        exp_in_green <= glE_green[12:0];
+	div		        exp_in_green <= glE_green[12:0];
 			        exp_in_blue <= glE_blue[12:0];
 			end else if (hdr_done) begin
 			        exp_in_red <= lE_red;
