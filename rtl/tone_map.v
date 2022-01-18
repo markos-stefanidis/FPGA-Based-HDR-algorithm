@@ -13,12 +13,14 @@ module tone_map(
 	
 	output [2:0] last_frame,
 	output reg [127:0] wr_data,
-	output reg wr_req
+	output reg wr_req,
+	output reg hdr_last_frame,
+	output reg [24:0] wr_address
 );
 
-	//N (number of pixels) = 307200, a = 0.18, aN = a*N = 55296
+	//N_pixels (number of pixels) = 307200, a = 0.18, aN = a*N_pixels = 55296
 	localparam FP = 8;
-	localparam N = 307200 << FP;
+	localparam N_pixels = 307200 << FP;
 	localparam a = 46;
 	localparam max_red = 31 << FP;
 	localparam max_green = 63 << FP;
@@ -107,19 +109,15 @@ module tone_map(
 			end
 		
 			if(frame_done) begin
-				glE_red <= (slE_red << FP) / N;
-				glE_green <= (slE_red << FP) / N;
-				glE_blue <= (slE_red << FP) / N;
+				glE_red <= (slE_red << FP) / N_pixels;
+				glE_green <= (slE_red << FP) / N_pixels;
+				glE_blue <= (slE_red << FP) / N_pixels;
 			end
 		
 			if (gE_ready) begin
 				aE_red <= (exp_out_red << FP) / a;
 				aE_green <= (exp_out_green << FP) / a;
 				aE_blue <= (exp_out_blue << FP) / a;
-			end else if (E_ready) begin
-				E_red <= exp_out_red;
-				E_green <= exp_out_green;
-				E_blue <= exp_out_blue;
 			end
 		
 			if (E_ready) begin
@@ -190,53 +188,54 @@ module tone_map(
 	assign hdr_green = (|(D_green[FP-1:0])) ? (D_green[FP+5:FP] + 1) : (D_green[FP+6:FP]);
 	assign hdr_blue = (|(D_blue[FP-1:0])) ? (D_blue[FP+4:FP] + 1) : (D_blue[FP+5:FP]);
 	
-	always@(posedge clk) begin
+ always@(posedge clk) begin
 		if(~rst_n) begin
 			pixel_counter <= 3'b0;
 			wr_req <= 1'b0;
 			wr_ready <= 1'b0;
 			reg_wr_req <= 1'b0;
+			wr_address <= 25'hE1000;
 		end else begin
 			if (D_ready) begin
 				case(pixel_counter)
 					3'b000: begin
-						wr_data[7:0] <= {hdr_red, hdr_green[5:4]};
-						wr_data[15:0] <= {hdr_green[4:0], hdr_blue};
+						wr_data[7:0] <= {hdr_red, hdr_green[5:3]};
+						wr_data[15:8] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b001: begin
-						wr_data[23:16] <= {hdr_red, hdr_green[5:4]};
-						wr_data[31:24] <= {hdr_green[4:0], hdr_blue};
+						wr_data[23:16] <= {hdr_red, hdr_green[5:3]};
+						wr_data[31:24] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b010: begin
-						wr_data[39:32] <= {hdr_red, hdr_green[5:4]};
-						wr_data[47:40] <= {hdr_green[4:0], hdr_blue};
+						wr_data[39:32] <= {hdr_red, hdr_green[5:3]};
+						wr_data[47:40] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b011: begin
-						wr_data[55:48] <= {hdr_red, hdr_green[5:4]};
-						wr_data[63:56] <= {hdr_green[4:0], hdr_blue};
+						wr_data[55:48] <= {hdr_red, hdr_green[5:3]};
+						wr_data[63:56] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b100: begin
-						wr_data[71:64] <= {hdr_red, hdr_green[5:4]};
-						wr_data[79:72] <= {hdr_green[4:0], hdr_blue};
+						wr_data[71:64] <= {hdr_red, hdr_green[5:3]};
+						wr_data[79:72] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b101: begin
-						wr_data[87:80] <= {hdr_red, hdr_green[5:4]};
-						wr_data[95:88] <= {hdr_green[4:0], hdr_blue};
+						wr_data[87:80] <= {hdr_red, hdr_green[5:3]};
+						wr_data[95:88] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b110: begin
-						wr_data[103:96] <= {hdr_red, hdr_green[5:4]};
-						wr_data[111:104] <= {hdr_green[4:0], hdr_blue};
+						wr_data[103:96] <= {hdr_red, hdr_green[5:3]};
+						wr_data[111:104] <= {hdr_green[2:0], hdr_blue};
 					end
 					
 					3'b111: begin
-						wr_data[119:112] <= {hdr_red, hdr_green[5:4]};
-						wr_data[127:120] <= {hdr_green[4:0], hdr_blue};
+						wr_data[119:112] <= {hdr_red, hdr_green[5:3]};
+						wr_data[127:120] <= {hdr_green[2:0], hdr_blue};
 					end
 				endcase
 		
@@ -258,6 +257,13 @@ module tone_map(
 				wr_req <= 1'b0;
 				reg_wr_req <= 1'b0;
 			end
+
+			if(wr_req) begin
+				wr_address <= (wr_address < 25'h12C000) ? wr_address + 1 : 25'hE1000;
+			end
+
+			hdr_last_frame <= (wr_address > 25'h106800);
+
 		end
 	end
 	

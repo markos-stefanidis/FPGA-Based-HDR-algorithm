@@ -17,6 +17,7 @@ module image_generator(
 	output wr_req,
 	output reg [24:0] rd_address,
 	output [24:0] wr_address,
+	output hdr_last_frame,
 	output [127:0] wr_data
 );
 
@@ -265,6 +266,7 @@ module image_generator(
 					endcase
 					pixel_counter <= pixel_counter + 1;
 					STATE <= (pixel_counter == 3'b111) ? WAITING_DATA : PROCESSING;
+					hdr_start <= (pixel_counter != 3'b111);
 				end
 			endcase
 		end
@@ -338,6 +340,8 @@ module image_generator(
 
 		.last_frame (last_frame),
 		.wr_data (wr_data),
+		.hdr_last_frame (hdr_last_frame),
+		.wr_address (wr_address),
 		.wr_req (wr_req)
 	);
 
