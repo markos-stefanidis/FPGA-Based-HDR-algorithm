@@ -6,7 +6,7 @@ module row_buffer_vga(
 	
 	input [9:0] vga_h_counter,
 	input rd_valid,
-	input [127:0] rd_data,	
+	input [255:0] rd_data,	
 	
 	input start_frame,
 	input start_row,
@@ -42,7 +42,7 @@ module row_buffer_vga(
 	
 	
 	reg row_done;
-	reg [6:0] data_counter; // data_counter counts how many times rd_data have arrived from the memory.
+	reg [5:0] data_counter; // data_counter counts how many times rd_data have arrived from the memory.
 	
 	reg reg_rd_req;
 	reg [9:0] pixel_address;
@@ -50,7 +50,7 @@ module row_buffer_vga(
 	
 	assign rst_buffer = ~rst_n_25M;
 	
-	assign wr_en = (data_counter < 80);
+	assign wr_en = (data_counter < 40);
 
 	always@(posedge clk_133M) begin
 		if(~rst_n_133M) begin
@@ -67,7 +67,7 @@ module row_buffer_vga(
 			rd_address <= 25'b0;
 			rd_req <= 1'b0;
 			
-			data_counter <= 7'h50;
+			data_counter <= 6'h28;
 
 			reg_rd_req <= 1'b0;
 			
@@ -100,11 +100,11 @@ module row_buffer_vga(
 					endcase
 				end	
 			end else if(rd_req) begin
-				rd_address <= rd_address + 4;
+				rd_address <= rd_address + 8;
 			end
 			
 			if(start_row_133M && ~q_start_row_133M) begin
-				data_counter <= 7'b0;
+				data_counter <= 6'b0;
 			end else if (rd_valid) begin
 				data_counter <= data_counter + 1;
 			end
@@ -129,7 +129,7 @@ module row_buffer_vga(
 			
 			if(start_row_133M && ~q_start_row_133M) begin
 				row_done <= 1'b0;
-			end else if (data_counter == 78 && rd_valid) begin
+			end else if (data_counter == 38 && rd_valid) begin
 				row_done <= 1'b1;
 			end
 			

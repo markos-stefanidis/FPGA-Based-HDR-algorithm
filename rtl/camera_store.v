@@ -3,17 +3,12 @@ module camera_store(
 	input p_clk,
 	input rst_n_133M,
 	
-	input [127:0] p_data,
-	input [24:0] wr_address,
-	input [2:0] last_frame,
-	input frame_done,
+	input [255:0] p_data,
 	input data_valid,
 	input ram_busy,
 	
-	output reg [127:0] o_p_data,
-	output reg [24:0] o_wr_address,
-	output reg [2:0] o_last_frame,
-	output reg o_frame_done,
+	output reg [255:0] data,
+	output reg [24:0] wr_address,
 	output reg wr_req
 );
 
@@ -23,7 +18,7 @@ module camera_store(
 	wire rst;
 	assign rst = ~rst_n_133M;
 	wire [156:0] wr_data;
-	wire [156:0] rd_data;
+	wire [255:0] rd_data;
 	reg rd_en;
 	wire full;
 	wire empty;
@@ -43,7 +38,7 @@ module camera_store(
 	reg q_rd_en;
 	
 	//assign rd_en = qqq_data_valid;
-	assign wr_data = {p_data, wr_address, last_frame, frame_done};
+	//assign wr_data = {p_data, wr_address, last_frame, frame_done};
 /*	
 
 	// This section implements clock domain crossing by double-floping the data. With this method data corruption is more likely.
@@ -115,10 +110,8 @@ module camera_store(
 
 	always@(posedge clk_133M) begin
 		if(~rst_n_133M) begin
-			o_p_data <= 128'b0;
-			o_wr_address <= 25'b0;
-			o_last_frame <= 1'b0;
-			o_frame_done <= 1'b0;
+			data <= 255'b0;
+			wr_address <= 25'b0;
 			wr_req <= 1'b0;
 			q_data_valid <= 1'b0;
 			qq_data_valid <= 1'b0;
@@ -133,8 +126,16 @@ module camera_store(
 			rd_en <= qqq_data_valid && ~(qq_data_valid);
 			q_rd_en <= rd_en;
 			
+			if(wr_req) begin
+				if(wr_address < 25'hE0FFF) begin
+					wr_address <= wr_address + 8;
+				end else begin
+					wr_address <= 25'h0;
+				end
+			end
+
 			if(~ram_busy) begin
-				{o_p_data, o_wr_address, o_last_frame, o_frame_done} <= rd_data;
+				data <= rd_data;
 			end
 			
 			if(q_rd_en) begin // If the ram is not ready to accept requests, then reg_wr_req is asserted indicating that the write request has not been made.
@@ -161,7 +162,7 @@ module camera_store(
 
 	
 	camera_fifo camera_fifo(
-		.Data (wr_data),
+		.Data (p_data),
 		.WrClock (p_clk),
 		.RdClock (clk_133M),
 		.WrEn (data_valid),

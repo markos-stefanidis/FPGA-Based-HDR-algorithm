@@ -12,7 +12,7 @@ module tone_map(
 	input ram_busy,
 	
 	output [2:0] last_frame,
-	output reg [127:0] wr_data,
+	output reg [255:0] wr_data,
 	output reg wr_req,
 	output reg hdr_last_frame,
 	output reg [24:0] wr_address
@@ -46,7 +46,7 @@ module tone_map(
 	reg [31:0] D_green;
 	reg [31:0] D_blue;
 	
-	reg [2:0] pixel_counter;
+	reg [3:0] pixel_counter;
 	
 	wire [11:0] exp_in_red;
 	wire [11:0] exp_in_green;
@@ -187,7 +187,7 @@ module tone_map(
 	
  always@(posedge clk) begin
 		if(~rst_n) begin
-			pixel_counter <= 3'b0;
+			pixel_counter <= 4'b0;
 			wr_req <= 1'b0;
 			wr_ready <= 1'b0;
 			reg_wr_req <= 1'b0;
@@ -195,49 +195,89 @@ module tone_map(
 		end else begin
 			if (D_ready) begin
 				case(pixel_counter)
-					3'b000: begin
+					4'b0000: begin
 						wr_data[7:0] <= {hdr_red, hdr_green[5:3]};
 						wr_data[15:8] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b001: begin
+					4'b0001: begin
 						wr_data[23:16] <= {hdr_red, hdr_green[5:3]};
 						wr_data[31:24] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b010: begin
+					4'b0010: begin
 						wr_data[39:32] <= {hdr_red, hdr_green[5:3]};
 						wr_data[47:40] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b011: begin
+					4'b0011: begin
 						wr_data[55:48] <= {hdr_red, hdr_green[5:3]};
 						wr_data[63:56] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b100: begin
+					4'b0100: begin
 						wr_data[71:64] <= {hdr_red, hdr_green[5:3]};
 						wr_data[79:72] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b101: begin
+					4'b0101: begin
 						wr_data[87:80] <= {hdr_red, hdr_green[5:3]};
 						wr_data[95:88] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b110: begin
+					4'b0110: begin
 						wr_data[103:96] <= {hdr_red, hdr_green[5:3]};
 						wr_data[111:104] <= {hdr_green[2:0], hdr_blue};
 					end
 					
-					3'b111: begin
+					4'b0111: begin
 						wr_data[119:112] <= {hdr_red, hdr_green[5:3]};
 						wr_data[127:120] <= {hdr_green[2:0], hdr_blue};
+					end
+
+					4'b1000: begin
+						wr_data[135:128] <= {hdr_red, hdr_green[5:3]};
+						wr_data[143:136] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1001: begin
+						wr_data[151:144] <= {hdr_red, hdr_green[5:3]};
+						wr_data[159:152] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1010: begin
+						wr_data[167:160] <= {hdr_red, hdr_green[5:3]};
+						wr_data[175:168] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1011: begin
+						wr_data[183:176] <= {hdr_red, hdr_green[5:3]};
+						wr_data[191:184] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1100: begin
+						wr_data[199:192] <= {hdr_red, hdr_green[5:3]};
+						wr_data[207:200] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1101: begin
+						wr_data[215:208] <= {hdr_red, hdr_green[5:3]};
+						wr_data[223:216] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1110: begin
+						wr_data[231:224] <= {hdr_red, hdr_green[5:3]};
+						wr_data[239:232] <= {hdr_green[2:0], hdr_blue};
+					end
+					
+					4'b1111: begin
+						wr_data[247:240] <= {hdr_red, hdr_green[5:3]};
+						wr_data[255:248] <= {hdr_green[2:0], hdr_blue};
 					end
 				endcase
 		
 				pixel_counter <= pixel_counter + 1;
-				wr_ready <= (pixel_counter == 3'b111);
+				wr_ready <= (pixel_counter == 4'b1111);
 			end else begin
 				wr_ready <= 1'b0;
 			end
