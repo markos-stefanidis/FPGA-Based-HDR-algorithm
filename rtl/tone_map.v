@@ -151,30 +151,27 @@ module tone_map(
 	assign exp_in_blue = (hdr_done) ? (lE_blue) : ((gE_sum_ready) ? (glE_blue[11:0]) : 12'b0);
 	
 	exp_lut exp_lut_red(
-		.Address (exp_in_red),
-		.OutClock (clk),
-		.OutClockEn (exp_lut_en),
-		.Reset (lut_rst),
+		.clk (clk),
+		.clk_en (exp_lut_en),
+		.address (exp_in_red),
 	
-		.Q (exp_out_red)
+		.data (exp_out_red)
 	);
 	
 	exp_lut exp_lut_green(
-		.Address (exp_in_green),
-		.OutClock (clk),
-		.OutClockEn (exp_lut_en),
-		.Reset (lut_rst),
+		.clk (clk),
+		.clk_en (exp_lut_en),
+		.address (exp_in_green),
 	
-		.Q (exp_out_green)
+		.data (exp_out_green)
 	);
-	
+
 	exp_lut exp_lut_blue(
-		.Address (exp_in_blue),
-		.OutClock (clk),
-		.OutClockEn (exp_lut_en),
-		.Reset (lut_rst),
+		.clk (clk),
+		.clk_en (exp_lut_en),
+		.address (exp_in_blue),
 	
-		.Q (exp_out_blue)
+		.data (exp_out_blue)
 	);
 	
 	wire [4:0] hdr_red;
