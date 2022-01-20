@@ -259,7 +259,7 @@ module tone_map(
 			end
 
 			if(wr_req) begin
-				wr_address <= (wr_address < 25'h12C000) ? wr_address + 1 : 25'hE1000;
+				wr_address <= (wr_address < 25'h12BFFF) ? wr_address + 4 : 25'hE1000;
 			end
 
 			hdr_last_frame <= (wr_address > 25'h106800);

@@ -277,7 +277,7 @@ module top_level(
 	wire vga_start_row;
 	wire vga_start_frame;
 	wire [15:0] pixel_data;
-	
+	wire hdr_last_frame;	
 	
 	vga_controller vga_controller(
 		.clk_25M (clk_25M),
@@ -308,9 +308,13 @@ module top_level(
 		
 		.start_frame (vga_start_frame),
 		.start_row (vga_start_row),
+
 		.last_frame (last_frame_133M),
 		.ram_busy (ram_busy),
 		
+		.hdr_en (hdr_en_133M),
+		.hdr_last_frame (hdr_last_frame),
+
 		.pixel_data (pixel_data),
 		.rd_address (vga_read_address),
 		.rd_req (vga_read_req)
@@ -328,6 +332,8 @@ module top_level(
 	wire hdr_rd_req;
 	wire [24:0] hdr_rd_address;
 	wire hdr_wr_req;
+	wire [24:0] hdr_wr_address;
+	wire [127:0] hdr_wr_data;
 
 	image_generator image_generator(
 	        .clk (clk_133M),
@@ -347,8 +353,9 @@ module top_level(
 	        .rd_req (hdr_rd_req),
 	        .wr_req (hdr_wr_req),
 	        .rd_address (hdr_rd_address),
-	        .wr_address (),
-	        .wr_data ()
+	        .wr_address (hdr_wr_address),
+	        .hdr_last_frame (hdr_last_frame),
+	        .wr_data (hdr_wr_data)
 	);
 	
 	uart_controller uart_controller(
@@ -376,7 +383,7 @@ module top_level(
 		.vga_read_req (vga_read_req),
 		.ddr_data_valid (ddr_data_valid),
 		.hdr_rd_req (hdr_rd_req),
-		.hdr_wr_req (1'b0),
+		.hdr_wr_req (hdr_wr_req),
 		
 		.camera_wr_address (camera_wr_address),
 		.vga_read_address (vga_read_address),
@@ -384,8 +391,8 @@ module top_level(
 		.ddr_rd_data (ddr_rd_data),
 		
 		.hdr_rd_address (hdr_rd_address),
-		.hdr_wr_address (25'b0),
-		.hdr_wr_data (128'b0),
+		.hdr_wr_address (hdr_wr_address),
+		.hdr_wr_data (hdr_wr_data),
 
 		.uart_rd_address (uart_rd_address),
 		.uart_rd_req (uart_rd_req),
