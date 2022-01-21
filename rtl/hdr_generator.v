@@ -26,7 +26,6 @@ module image_generator(
 	reg req_all;
 	reg all_read;
 	reg [1:0] last_req;
-	reg row_done;
 	reg reg_rd_req;
 	
 	reg [255:0] rd_data_high;
@@ -47,7 +46,6 @@ module image_generator(
 			data_counter <= 7'b0;
 			last_req <= 2'b11;			
 			req_all <= 1'b0;
-			row_done <= 1'b0;
 			all_read <= 1'b0;
 			reg_rd_req <= 1'b0;
 			last_read <= 1'b0;
@@ -89,7 +87,7 @@ module image_generator(
 				last_read <= 1'b0;
 			end else if(rd_req) begin
 				rd_address <= rd_address_next;
-				rd_address_next <= rd_address + 4;
+				rd_address_next <= rd_address + 8;
 				last_read <= ~last_read;
 			end
 
@@ -165,19 +163,17 @@ module image_generator(
 				
 			end
 			
-			if(frame_done || ((rd_valid || reg_rd_req) && all_read)|| ((rd_req) && ~last_read) || camera_wr_req)  begin 
-				if(~ram_busy && ~row_done) begin
+			if(frame_done || ((rd_req) && ~last_read) || camera_wr_req || reg_rd_req)  begin 
+				if(~ram_busy) begin
 					rd_req <= 1'b1;
 					reg_rd_req <= 1'b0;
-				end else if (~row_done) begin
-					rd_req <= 1'b0;
-					reg_rd_req <= 1'b1;
 				end else begin
 					rd_req <= 1'b0;
-					reg_rd_req <= 1'b0;
+					reg_rd_req <= 1'b1;
 				end
 			end else begin
 				rd_req <= 1'b0;
+				reg_rd_req <= 1'b0;
 			end
 
 			all_read <= camera_wr_req;

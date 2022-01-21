@@ -49,6 +49,7 @@ module ram_fifo(
 
 	wire [4:0] requests;
 	wire rst;
+	wire one_hot = (requests == 5'b00000 || requests == 5'b00001 || requests == 5'b00010 || requests == 5'b00100 || requests == 5'b01000 || requests == 5'b10000);
 	
 	wire in_full;
 	wire in_almost_full;
@@ -57,13 +58,13 @@ module ram_fifo(
 	wire mod_empty;
 	wire mod_full;
 	
-	reg [155:0] in_wr_data_0;
+	reg [284:0] in_wr_data_0;
 	reg in_wr_req_0;
-	reg [155:0] in_wr_data_1;
+	reg [284:0] in_wr_data_1;
 	reg in_wr_req_1;
-	reg [155:0] in_wr_data_2;
+	reg [284:0] in_wr_data_2;
 	reg in_wr_req_2;
-	reg [155:0] in_wr_data_3;
+	reg [284:0] in_wr_data_3;
 	reg in_wr_req_3;
 	
 	//wr_mod
@@ -82,13 +83,13 @@ module ram_fifo(
 	
 	reg reg_led;
 	
-	wire [155:0] in_rd_data;
+	wire [284:0] in_rd_data;
 	wire in_rd_en;
 	reg q_in_rd_en;
 	
 	assign rd_mod_en = ddr_data_valid;	
 	assign rst = ~rst_n_133M;
-	assign busy = in_almost_full || in_wr_req_1 || mod_full;
+	assign busy = in_almost_full || ~one_hot || mod_full;
 	assign in_rd_en = (init_done && ~(in_empty || cmd_busy || cmd_valid || q_in_rd_en));
 	assign uart_led = reg_led;
 	assign requests = {hdr_rd_req, camera_wr_req, hdr_wr_req, vga_read_req, uart_rd_req}; 
@@ -129,10 +130,10 @@ module ram_fifo(
 					case (requests)
 
 						5'b11110: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
 							in_wr_data_2 <= {4'b0100, hdr_wr_data, hdr_wr_address};
-							in_wr_data_3 <= {4'b0011, 128'b0, vga_read_address};
+							in_wr_data_3 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -147,7 +148,7 @@ module ram_fifo(
 						end
 
 						5'b11100: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
 							in_wr_data_2 <= {4'b0100, hdr_wr_data, hdr_wr_address};
 
@@ -163,9 +164,9 @@ module ram_fifo(
 						end
 
 						5'b11010: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
-							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+							in_wr_data_2 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -180,7 +181,7 @@ module ram_fifo(
 						end
 
 						5'b11000: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, camera_wr_data, camera_wr_address};
 
 							in_wr_req_0 <= 1'b1;
@@ -195,9 +196,9 @@ module ram_fifo(
 						end
 
 						5'b10110: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
-							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+							in_wr_data_2 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -212,7 +213,7 @@ module ram_fifo(
 						end
 
 						5'b10100: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
 
 							in_wr_req_0 <= 1'b1;
@@ -227,8 +228,8 @@ module ram_fifo(
 						end
 
 						5'b10010: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
-							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_req};
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
+							in_wr_data_1 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -243,7 +244,7 @@ module ram_fifo(
 						end
 
 						5'b10000: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, hdr_rd_address};		
+							in_wr_data_0 <= {4'b0011, 256'b0, hdr_rd_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b0;
@@ -257,9 +258,9 @@ module ram_fifo(
 						end
 						
 						5'b01110: begin
-							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};
 							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
-							in_wr_data_2 <= {4'b0011, 128'b0, vga_read_req};
+							in_wr_data_2 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -273,7 +274,7 @@ module ram_fifo(
 						end
 
 						5'b01100: begin
-							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};
 							in_wr_data_1 <= {4'b0100, hdr_wr_data, hdr_wr_data};
 
 							in_wr_req_0 <= 1'b1;
@@ -287,8 +288,8 @@ module ram_fifo(
 						end
 
 						5'b01010: begin
-							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_req};		
-							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_address};
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};
+							in_wr_data_1 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -302,7 +303,7 @@ module ram_fifo(
 						end
 
 						5'b01000: begin
-							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};		
+							in_wr_data_0 <= {4'b0100, camera_wr_data, camera_wr_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b0;
@@ -315,7 +316,7 @@ module ram_fifo(
 
 						5'b00110: begin
 							in_wr_data_0 <= {4'b0100, hdr_wr_data, hdr_wr_address};
-							in_wr_data_1 <= {4'b0011, 128'b0, vga_read_address};
+							in_wr_data_1 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -341,7 +342,7 @@ module ram_fifo(
 						end
 
 						5'b00010: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, vga_read_address};
+							in_wr_data_0 <= {4'b0011, 256'b0, vga_read_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b0;
@@ -355,8 +356,8 @@ module ram_fifo(
 						end
 
 						5'b00011: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, vga_read_address};
-							in_wr_data_1 <= {4'b0011, 128'b0, uart_rd_address};
+							in_wr_data_0 <= {4'b0011, 256'b0, vga_read_address};
+							in_wr_data_1 <= {4'b0011, 256'b0, uart_rd_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b1;
@@ -371,7 +372,7 @@ module ram_fifo(
 						end
 
 						5'b00010: begin
-							in_wr_data_0 <= {4'b0011, 128'b0, uart_rd_address};
+							in_wr_data_0 <= {4'b0011, 256'b0, uart_rd_address};
 
 							in_wr_req_0 <= 1'b1;
 							in_wr_req_1 <= 1'b0;
@@ -388,7 +389,7 @@ module ram_fifo(
 							in_wr_data_0 <= in_wr_data_1;     	
 							in_wr_data_1 <= in_wr_data_2;
 							in_wr_data_2 <= in_wr_data_3;
-							in_wr_data_3 <= 155'b0;
+							in_wr_data_3 <= 285'b0;
 
 							in_wr_req_0 <= in_wr_req_1;
 							in_wr_req_1 <= in_wr_req_2;
@@ -446,7 +447,6 @@ module ram_fifo(
 		.RdEn (in_rd_en), 
 		.Reset (rst), 
 		.Q (in_rd_data),
-		.WCNT (),
 		.Empty (in_empty),
 		.Full (in_full),
 		.AlmostEmpty (),
