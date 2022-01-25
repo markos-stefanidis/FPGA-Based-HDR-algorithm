@@ -80,7 +80,7 @@ module image_generator(
 				
 					3'b101: begin
 						rd_address <= 25'h70800; //Camera Writing high exp, reading low and then mid
-						rd_address <= 25'h9600; //Camera writing mid exp, reading low and then high
+						rd_address <= 25'h96000; 
 					end
 				
 				endcase
