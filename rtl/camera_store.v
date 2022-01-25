@@ -2,6 +2,7 @@ module camera_store(
 	input clk_133M,
 	input p_clk,
 	input rst_n_133M,
+	input rst_n_24M,
 	
 	input [255:0] p_data,
 	input data_valid,
@@ -159,19 +160,21 @@ module camera_store(
 	end
 	
 	
-
-	
 	camera_fifo camera_fifo(
-		.Data (p_data),
-		.WrClock (p_clk),
-		.RdClock (clk_133M),
-		.WrEn (data_valid),
-		.RdEn (rd_en),
-		.Reset (rst),
-		.RPReset (rst), 
-		.Q (rd_data),
-		.Empty (empty),
-		.Full (full)
+		.slow_clk (p_clk),
+		.fast_clk (clk_133M),
+		.rst_n_slow (rst_n_24M),
+		.rst_n_fast (rst_n_133M),
+
+		.rd_clk_en (rd_en),
+		.wr_clk_en (data_valid),
+
+		.data_in (p_data),
+
+		.data_out (rd_data),
+		.empty (empty),
+		.full (full)
+
 	);
 
 endmodule
