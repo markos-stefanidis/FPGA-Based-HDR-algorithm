@@ -64,33 +64,34 @@ module hdr
 
 	assign lut_rst = ~rst_n;
 
-	localparam ln_exp_high = 6'b111101;
-	localparam ln_exp_mid = 6'b110010;
-	localparam ln_exp_low = 6'b101011;
+	localparam ln_exp_high = 12'b001010110110;
+	localparam ln_exp_mid = 12'b001100100000;
+	localparam ln_exp_low = 12'b001111010010;
 	
-	g_red G_red_high(
-		.Address (red_high),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_red_high)
+	g_red_lut G_red_high(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (red_high),
+
+		.data (g_red_high)
 	);
 
-	g_red G_red_mid(
-		.Address (red_mid),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_red_mid)
+	g_red_lut G_red_mid(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (red_mid),
+
+		.data (g_red_mid)
 	);
-	
-	g_red G_red_low(
-		.Address (red_low),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_red_low)
+
+	g_red_lut G_red_low(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (red_low),
+
+		.data (g_red_low)
 	);
+
 
 	w_five W_red
 	(
@@ -106,32 +107,30 @@ module hdr
 		.w_low (w_red_low)
 	);
 
-	g_green G_green_high(
-		.Address (green_high),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_green_high)
+	g_green_lut G_green_high(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (green_high),
+
+		.data (g_green_high)
 	);
 
-	g_green G_green_mid(
-		.Address (green_mid),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_green_mid)
-	);
-	
-	g_green G_green_low(
-		.Address (green_low),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_green_low)
+	g_green_lut G_green_mid(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (green_mid),
+
+		.data (g_green_mid)
 	);
 
-	
-	
+	g_green_lut G_green_low(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (green_low),
+
+		.data (g_green_low)
+	);
+
 	
 	w_six W_green
 	(
@@ -147,30 +146,29 @@ module hdr
 		.w_low (w_green_low)
 	);
 
-	g_blue G_blue_high(
-		.Address (blue_high),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_blue_high)
-	);
-	
-	g_blue G_blue_mid(
-		.Address (blue_mid),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_blue_mid)
-	);
-	
-	g_blue G_blue_low(
-		.Address (blue_low),
-		.OutClock (clk),
-		.OutClockEn (hdr_start),
-		.Reset (lut_rst),
-		.Q (g_blue_low)
+	g_blue_lut G_blue_high(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (blue_high),
+
+		.data (g_blue_high)
 	);
 
+	g_blue_lut G_blue_mid(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (blue_mid),
+
+		.data (g_blue_mid)
+	);
+
+	g_blue_lut G_blue_low(
+		.clk (clk),
+		.clk_en (hdr_start),
+		.pixel (blue_low),
+
+		.data (g_blue_low)
+	);
 
 	w_five W_blue
 	(

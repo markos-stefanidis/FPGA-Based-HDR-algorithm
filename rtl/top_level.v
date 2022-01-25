@@ -163,7 +163,7 @@ module top_level(
 // Instantiating the rest of the modules
 
 	
-	wire [127:0] camera_p_data;
+	wire [255:0] camera_p_data;
 	wire [24:0] camera_p_address;
 	wire camera_data_valid;
 	wire [2:0] camera_last_frame;
@@ -190,39 +190,37 @@ module top_level(
 	);
 	
 	
-	reg [2:0] last_frame_133M;
 	reg frame_done_133M;
 	wire ram_busy;	
-	wire [127:0] camera_wr_data;
+	wire [255:0] camera_wr_data;
 	wire [24:0] camera_wr_address;
 	
 	camera_store camera_store(
 		.clk_133M (clk_133M),
 		.p_clk (p_clk),
 		.rst_n_133M (rst_n_133M),
+		.rst_n_24M (rst_n_24M),
 		
 		.p_data (camera_p_data),
-		.wr_address (camera_p_address),
-		.last_frame (camera_last_frame),
-		.frame_done (camera_frame_done),
 		.data_valid (camera_data_valid),
 		.ram_busy (ram_busy),
 		
-		.o_p_data (camera_wr_data),
-		.o_wr_address (camera_wr_address),
-		.o_last_frame (),
-		.o_frame_done (),
+		.data (camera_wr_data),
+		.wr_address (camera_wr_address),
 		.wr_req (camera_wr_req)
 	);
 	 
+	wire [2:0] last_frame_grey;
+	assign last_frame_grey = (camera_last_frame << 1) ^ camera_last_frame;
 	reg [2:0] q_last_frame_133M;
+	reg [2:0] qq_last_frame_133M;
 	reg q_frame_done_133M;
 	reg q_hdr_en_133M;
 	reg hdr_en_133M;
 
 	always@(posedge clk_133M) begin
 	     q_last_frame_133M <= camera_last_frame;
-	     last_frame_133M <= q_last_frame_133M;
+	     qq_last_frame_133M <= q_last_frame_133M;
 
 	     q_frame_done_133M <= camera_frame_done;
 	     frame_done_133M <= q_frame_done_133M;
@@ -230,6 +228,9 @@ module top_level(
 	     q_hdr_en_133M <= hdr_en;
 	     hdr_en_133M <= q_hdr_en_133M;
 	end
+
+	wire [2:0] last_frame_133M;
+	assign last_frame_133M = (qq_last_frame_133M >> 1) ^ qq_last_frame_133M;
 
 	wire camera_config_done;
 	wire [7:0] conf_addr;
@@ -263,12 +264,12 @@ module top_level(
 	wire vga_read_req;
 	wire ddr_data_valid;
 	wire [24:0] vga_read_address;
-	wire [127:0] ddr_rd_data;
+	wire [255:0] ddr_rd_data;
 	wire ddr_init_done;
 	wire [3:0] cmd;
 	wire [24:0] sys_addr;
-	wire [127:0] vga_read_data;
-	wire [127:0] ddr_wr_data;
+	wire [255:0] vga_read_data;
+	wire [255:0] ddr_wr_data;
 	wire vga_data_valid;
 	
 	
@@ -323,17 +324,17 @@ module top_level(
 	reg q_take_pic;
 	reg take_pic_133M;
 	
-	wire [127:0] uart_rd_data;
+	wire [255:0] uart_rd_data;
 	wire uart_data_valid;
 	wire uart_rd_req;
 	wire [24:0] uart_rd_address;
-	wire [127:0] hdr_rd_data;
+	wire [255:0] hdr_rd_data;
 	wire hdr_rd_valid;
 	wire hdr_rd_req;
 	wire [24:0] hdr_rd_address;
 	wire hdr_wr_req;
 	wire [24:0] hdr_wr_address;
-	wire [127:0] hdr_wr_data;
+	wire [255:0] hdr_wr_data;
 
 	image_generator image_generator(
 	        .clk (clk_133M),

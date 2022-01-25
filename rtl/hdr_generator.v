@@ -202,10 +202,9 @@ module image_generator(
 			case(STATE)
 
 				WAITING_DATA: begin
-					STATE <= (all_read) ? PROCESSING : WAITING_DATA;
+					STATE <= (camera_wr_req) ? PROCESSING : WAITING_DATA;
 					pixel_counter <= 4'b0;
-					hdr_start <= all_read;
-
+					hdr_start <= 1'b0;
 				end
 
 				PROCESSING: begin
@@ -310,7 +309,7 @@ module image_generator(
 					endcase
 					pixel_counter <= pixel_counter + 1;
 					STATE <= (pixel_counter == 4'b1111) ? WAITING_DATA : PROCESSING;
-					hdr_start <= (pixel_counter != 4'b1111);
+					hdr_start <= 1'b1;
 				end
 			endcase
 		end
