@@ -6,9 +6,9 @@ module w_five
 	input [4:0] pixel_mid,
 	input [4:0] pixel_low,
 
-	output reg [11:0] w_high,
-	output reg [11:0] w_mid,
-	output reg [11:0] w_low
+	output reg [7:0] w_high,
+	output reg [7:0] w_mid,
+	output reg [7:0] w_low
 );
 
 	localparam N = 5;
@@ -17,8 +17,8 @@ module w_five
 	always@(posedge clk) begin
 		if(~rst_n) begin
 			w_high <= 8'b0;	
-                        w_mid <= 8'b0; 
-		        w_low <= 8'b0; 
+			w_mid <= 8'b0; 
+			w_low <= 8'b0; 
 		end else if(start) begin
 			w_high <= (pixel_high[N-1]) ? (MAX - pixel_high) : (pixel_high + 1);
 			w_mid <= (pixel_mid[N-1]) ? (MAX - pixel_mid) : (pixel_mid + 1);
