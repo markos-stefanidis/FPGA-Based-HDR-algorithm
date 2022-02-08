@@ -16,27 +16,27 @@ module hdr
 	input [4:0] blue_high,
 	input [4:0] blue_mid,
 	input [4:0] blue_low,
-		
+
 	input hdr_start,
-	
+
 //	input [15:0] exp_high,
 //	input [15:0] exp_mid,
 //	input [15:0] exp_low,
-	
-	output reg [11:0] lE_red,	
-	output reg [11:0] lE_green,	
-	output reg [11:0] lE_blue,
+
+	output [7:0] lE_red,
+	output [7:0] lE_green,
+	output [7:0] lE_blue,
 
 	output reg hdr_done
 );
 
-	localparam N = 12;
-	localparam FP = 8;
+	localparam N = 8;
+	localparam FP = 4;
 
 	wire [N-1:0] g_red_high;
 	wire [N-1:0] g_red_mid;
 	wire [N-1:0] g_red_low;
-	
+
 	wire [N-1:0] g_green_high;
 	wire [N-1:0] g_green_mid;
 	wire [N-1:0] g_green_low;
@@ -64,10 +64,10 @@ module hdr
 
 	assign lut_rst = ~rst_n;
 
-	localparam ln_exp_high = 12'b001010110110;
-	localparam ln_exp_mid = 12'b001100100000;
-	localparam ln_exp_low = 12'b001111010010;
-	
+	localparam ln_exp_high = 8'd43;
+	localparam ln_exp_mid = 8'd50;
+	localparam ln_exp_low = 8'd61;
+
 	g_red_lut G_red_high(
 		.clk (clk),
 		.clk_en (hdr_start),
@@ -101,7 +101,7 @@ module hdr
 		.pixel_high (red_high),
 		.pixel_mid (red_mid),
 		.pixel_low (red_low),
-		
+
 		.w_high (w_red_high),
 		.w_mid (w_red_mid),
 		.w_low (w_red_low)
@@ -131,7 +131,7 @@ module hdr
 		.data (g_green_low)
 	);
 
-	
+
 	w_six W_green
 	(
 	 	.clk (clk),
@@ -140,7 +140,7 @@ module hdr
 		.pixel_high (green_high),
 		.pixel_mid (green_mid),
 		.pixel_low (green_low),
-		
+
 		.w_high (w_green_high),
 		.w_mid (w_green_mid),
 		.w_low (w_green_low)
@@ -178,46 +178,50 @@ module hdr
 		.pixel_high (blue_high),
 		.pixel_mid (blue_mid),
 		.pixel_low (blue_low),
-		
+
 		.w_high (w_blue_high),
 		.w_mid (w_blue_mid),
 		.w_low (w_blue_low)
 	);
-	
-	
-	
+
+
+
 	wire [N-1 :0] red_diff_high;
 	wire [N-1 :0] red_diff_mid;
 	wire [N-1 :0] red_diff_low;
-	
+
 	wire [N-1 :0] green_diff_high;
 	wire [N-1 :0] green_diff_mid;
 	wire [N-1 :0] green_diff_low;
-	
+
 	wire [N-1 :0] blue_diff_high;
 	wire [N-1 :0] blue_diff_mid;
 	wire [N-1 :0] blue_diff_low;
 
-	
-	wire [N-1 :0] w_red_diff_high;
-	wire [N-1 :0] w_red_diff_mid;
-	wire [N-1 :0] w_red_diff_low;
-	
-	wire [N-1 :0] w_green_diff_high;
-	wire [N-1 :0] w_green_diff_mid;
-	wire [N-1 :0] w_green_diff_low;
 
-	wire [N-1 :0] w_blue_diff_high;
-	wire [N-1 :0] w_blue_diff_mid;
-	wire [N-1 :0] w_blue_diff_low;
+	wire [31:0] w_red_diff_high;
+	wire [31:0] w_red_diff_mid;
+	wire [31:0] w_red_diff_low;
 
-	reg [N-1 :0] sum_red;
+	wire [31:0] w_green_diff_high;
+	wire [31:0] w_green_diff_mid;
+	wire [31:0] w_green_diff_low;
+
+	wire [31:0] w_blue_diff_high;
+	wire [31:0] w_blue_diff_mid;
+	wire [31:0] w_blue_diff_low;
+
+	reg [N+1 :0] sum_red;
 	reg [N-1 :0] w_sum_red;
-	reg [N-1 :0] sum_green;
+	reg [N+1 :0] sum_green;
 	reg [N-1 :0] w_sum_green;
-	reg [N-1 :0] sum_blue;
+	reg [N+1 :0] sum_blue;
 	reg [N-1 :0] w_sum_blue;
-	
+
+	reg [31:0] div_red;
+	reg [31:0] div_green;
+	reg [31:0] div_blue;
+
 	reg stage1;
 	reg stage2;
 	always@(posedge clk) begin
@@ -225,26 +229,26 @@ module hdr
 			stage1 <= 1'b0;
 			stage2 <= 1'b0;
 			hdr_done <= 1'b0;
-			lE_red <= 0;
-			lE_green <= 0;
-			lE_blue <= 0;
+			div_red <= 0;
+			div_green <= 0;
+			div_blue <= 0;
 		end else begin
 			stage1 <= hdr_start;
 			stage2 <= stage1;
 			hdr_done <= stage2;
 
-			sum_red <= w_red_diff_high + w_red_diff_low + w_red_diff_mid;
+			sum_red <= w_red_diff_high[N-1:0] + w_red_diff_low[N-1:0] + w_red_diff_mid[N-1:0];
 			w_sum_red <= w_red_high + w_red_low + w_red_mid;
-			
-			sum_green <= w_green_diff_high + w_green_diff_low + w_green_diff_mid;
+
+			sum_green <= w_green_diff_high[N-1:0] + w_green_diff_low[N-1:0] + w_green_diff_mid[N-1:0];
 			w_sum_green <= w_green_high + w_green_low + w_green_mid;
-			
-			sum_blue <= w_blue_diff_high + w_blue_diff_low + w_blue_diff_mid;
+
+			sum_blue <= w_blue_diff_high[N-1:0] + w_blue_diff_low[N-1:0] + w_blue_diff_mid[N-1:0];
 			w_sum_blue <= w_blue_high + w_blue_low + w_blue_mid;
 
-			lE_red <= (sum_red << FP)/w_sum_red;
-			lE_green <= (sum_green << FP)/w_sum_green;
-			lE_blue <= (sum_blue << FP)/w_sum_blue;
+			div_red <= (sum_red << FP)/w_sum_red;
+			div_green <= (sum_green << FP)/w_sum_green;
+			div_blue <= (sum_blue << FP)/w_sum_blue;
 		end
 
 	end
@@ -264,7 +268,7 @@ module hdr
 	assign w_red_diff_high = (red_diff_high * w_red_high) >> FP;
 	assign w_red_diff_mid = (red_diff_mid * w_red_mid) >> FP;
 	assign w_red_diff_low = (red_diff_low * w_red_low) >> FP;
-	
+
 	assign w_green_diff_high = (green_diff_high * w_green_high) >> FP;
 	assign w_green_diff_mid = (green_diff_mid * w_green_mid) >> FP;
 	assign w_green_diff_low = (green_diff_low * w_green_low) >> FP;
@@ -273,9 +277,13 @@ module hdr
 	assign w_blue_diff_mid = (blue_diff_mid * w_blue_mid) >> FP;
 	assign w_blue_diff_low = (blue_diff_low * w_blue_low) >> FP;
 
+	assign lE_red = div_red[N-1:0];
+	assign lE_green = div_green[N-1:0];
+	assign lE_blue = div_blue[N-1:0];
+
 //	assign sum_red = w_red_diff_high + w_red_diff_low + w_red_diff_mid;
 //	assign w_sum_red = w_red_high + w_red_low + w_red_mid;
-//	
+//
 //	assign sum_green = w_green_diff_high + w_green_diff_low + w_green_diff_mid;
 //	assign w_sum_green = w_green_high + w_green_low + w_green_mid;
 //
