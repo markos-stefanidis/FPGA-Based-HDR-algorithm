@@ -1,7 +1,7 @@
 module uart_controller(
 	input clk,
 	input rst_n,
-	input [255:0] rd_data,
+	input [127:0] rd_data,
 	input rd_data_valid,
 	input start,
 	input [2:0] last_frame,
@@ -25,8 +25,8 @@ module uart_controller(
 	
 	reg [17:0] data_counter;
 	reg [2:0] STATE;
-	reg [5:0] byte_index;
-	reg [255:0] reg_data;
+	reg [4:0] byte_index;
+	reg [127:0] reg_data;
 	reg [7:0] uart_data;
 	reg uart_start;
 	reg q_start;
@@ -42,7 +42,7 @@ module uart_controller(
 			rd_address <= 24'b0;
 			data_counter <= 18'b0;
 			STATE <= IDLE;
-			byte_index <= 6'b0;
+			byte_index <= 5'b0;
 			rd_req <= 1'b0;
 			uart_data <= 8'b0;
 			uart_start <= 1'b0;
@@ -108,13 +108,14 @@ module uart_controller(
 						data_counter <= data_counter + 1;
 						reg_data <= rd_data;
 						STATE <= TX_DATA;
-						byte_index <= 6'b0;
+						byte_index <= 5'b0;
 					end
 				end
 				
 				TX_DATA: begin
 					if(uart_ready && ~uart_start) begin
 						case(byte_index)
+							/*
 							6'b011111: uart_data <= reg_data[255:248];
 							6'b011110: uart_data <= reg_data[247:240];
 							6'b011101: uart_data <= reg_data[239:232];
@@ -131,32 +132,33 @@ module uart_controller(
 							6'b010010: uart_data <= reg_data[151:144];
 							6'b010001: uart_data <= reg_data[143:136];
 							6'b010000: uart_data <= reg_data[135:128];
-							6'b001111: uart_data <= reg_data[127:120];
-							6'b001110: uart_data <= reg_data[119:112];
-							6'b001101: uart_data <= reg_data[111:104];
-							6'b001100: uart_data <= reg_data[103:96];
-							6'b001011: uart_data <= reg_data[95:88];
-							6'b001010: uart_data <= reg_data[87:80];
-							6'b001001: uart_data <= reg_data[79:72];
-							6'b001000: uart_data <= reg_data[71:64];
-							6'b000111: uart_data <= reg_data[63:56];
-							6'b000110: uart_data <= reg_data[55:48];
-							6'b000101: uart_data <= reg_data[47:40];
-							6'b000100: uart_data <= reg_data[39:32];
-							6'b000011: uart_data <= reg_data[31:24];
-							6'b000010: uart_data <= reg_data[23:16];
-							6'b000001: uart_data <= reg_data[15:8];
-							6'b000000: uart_data <= reg_data[8:0];
+							*/
+							5'b01111: uart_data <= reg_data[127:120];
+							5'b01110: uart_data <= reg_data[119:112];
+							5'b01101: uart_data <= reg_data[111:104];
+							5'b01100: uart_data <= reg_data[103:96];
+							5'b01011: uart_data <= reg_data[95:88];
+							5'b01010: uart_data <= reg_data[87:80];
+							5'b01001: uart_data <= reg_data[79:72];
+							5'b01000: uart_data <= reg_data[71:64];
+							5'b00111: uart_data <= reg_data[63:56];
+							5'b00110: uart_data <= reg_data[55:48];
+							5'b00101: uart_data <= reg_data[47:40];
+							5'b00100: uart_data <= reg_data[39:32];
+							5'b00011: uart_data <= reg_data[31:24];
+							5'b00010: uart_data <= reg_data[23:16];
+							5'b00001: uart_data <= reg_data[15:8];
+							5'b00000: uart_data <= reg_data[7:0];
 						endcase
-						uart_start <= (byte_index < 6'b100000);
+						uart_start <= (byte_index < 5'b10000);
 						byte_index <= byte_index + 1;					
 					end else begin
 						uart_start <= 1'b0;
 					end
 					
 					if(byte_index == 5'b10000) begin						
-						rd_address <= rd_address + 8;
-						if(data_counter == 18'h4B00) begin
+						rd_address <= rd_address + 4;
+						if(data_counter == 18'h9600) begin
 							STATE <= (hdr_en) ? HDR : DONE;
 						end else begin
 							STATE <= REQUEST_DATA;
