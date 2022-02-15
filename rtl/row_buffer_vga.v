@@ -140,7 +140,7 @@ module row_buffer_vga(
 			pixel_address <= 10'b0;
 			rd_en <= 10'b0;
 		end else begin
-			if(vga_h_counter == 798) begin
+			if(vga_h_counter == 797) begin
 				pixel_address <= 10'b0;
 				rd_en <= 1'b1;
 			end else begin

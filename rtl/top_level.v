@@ -9,11 +9,11 @@ module top_level(
 	input [3:0] keypad_row,
 
 
-	output[1:0] red,
-	output[1:0] green,
-	output[1:0] blue,
-	output vga_vsync,
-	output vga_hsync,
+	output reg [5:0] red,
+	output reg [5:0] green,
+	output reg [5:0] blue,
+	output reg vsync,
+	output reg hsync,
 	output scl,
 	output sda,
 	output xclk,
@@ -313,6 +313,17 @@ module top_level(
 	wire [15:0] pixel_data;
 	wire hdr_last_frame;
 
+	wire vga_vsync;
+	wire vga_hsync;
+	wire [5:0] vga_red;
+	wire [5:0] vga_green;
+
+	reg q_vsync;
+	reg q_hsync;
+	reg [5:0] q_red;
+	reg [5:0] q_green;
+	reg [5:0] q_blue;
+
 	vga_controller vga_controller(
 		.clk_25M (clk_25M),
 		.rst_n (rst_n_25M),
@@ -321,13 +332,41 @@ module top_level(
 		.h_counter (vga_h_counter),
 		.vsync (vga_vsync),
 		.hsync (vga_hsync),
-		.red (red),
-		.green (green),
-		.blue (blue),
+		.red (vga_red),
+		.green (vga_green),
+		.blue (vga_blue),
 
 		.start_row (vga_start_row),
 		.start_frame (vga_start_frame)
 	);
+
+	always@(posedge clk_25M) begin
+		if(~rst_n_25M) begin
+			vsync <= 1'b0;
+			hsync <= 1'b0;
+			red <= 6'b0;
+			green <= 6'b0;
+			blue <= 6'b0;
+
+			q_vsync <= 1'b0;
+			q_hsync <= 1'b0;
+			q_red <= 6'b0;
+			q_green <= 6'b0;
+			q_blue <= 6'b0;
+		end else begin
+			q_vsync <= vga_vsync;
+			q_hsync <= vga_hsync;
+			q_red <= vga_red;
+			q_green <= vga_green;
+			q_blue <= vga_blue;
+
+			vsync <= q_vsync;
+			hsync <= q_hsync;
+			red <= q_red;
+			green <= q_green;
+			blue <= q_blue;
+		end
+	end
 
 
 	row_buffer_vga row_buffer_vga(
