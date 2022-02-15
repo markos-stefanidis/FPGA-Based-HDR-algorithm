@@ -65,24 +65,7 @@ module cmd_fsm(
 			case(STATE)
 
 				IDLE: begin
-					if (ref_counter > 11'd1020 && ref_counter <= 11'd1030) begin
-						busy <= 1'b1;
-						if (cmd_valid) begin
-							burst_counter <= 1'b1;
-							reg_cmd <= cmd[2:0];
-							STATE <= (cmd == 4'b0001 || //Read
-									cmd == 4'b0010 || //Write
-									cmd == 4'b0011 || //Read with Auto Precharge
-									cmd == 4'b0100) //Write with Auto Precharge
-														? ACT :
-									(cmd == 4'b0101) ? PWRDWN_ENTER :
-									(cmd == 4'b0110) ? LMR :
-									(cmd == 4'b0111) ? SREF_ENTER :
-									IDLE;
-
-							counter <= 15'h2; //LMR State as counter, tMRD 2 cycles + 1 for state change
-						end
-					end else if (ref_counter > 11'd1030) begin
+					if (ref_counter > 11'd1030) begin
 						STATE <= AUTO_REF; //AUTO_REF
 						ref_reset <= 1'b1;
 						busy <= 1'b1;
@@ -101,12 +84,13 @@ module cmd_fsm(
 									(cmd == 4'b0111) ? SREF_ENTER :
 									IDLE;
 
-							busy <= (cmd == 4'b0001 || cmd == 4'b0010 || cmd == 4'b0011 || cmd == 4'b0100 ||
-									cmd == 4'b0101 || cmd == 4'b0110 || cmd == 4'b0111);
 							counter <= 15'h2; //LMR State as counter tMRD 2 cycles + 1 for state change
 						end else begin
 							busy <= 1'b0;
 						end
+
+						busy <= ((cmd == 4'b0001 || cmd == 4'b0010 || cmd == 4'b0011 || cmd == 4'b0100 || cmd == 4'b0101 || cmd == 4'b0110 || cmd == 4'b0111) && cmd_valid)
+					         		|| (ref_counter > 11'd1020 && ref_counter < 11'd1030);
 					end
 				end
 
