@@ -16,11 +16,16 @@ module camera_config(
 	// This module is responsible for configuring the camera module.
 	// ov7670_config module feeds the sccb interface with the address of the configuration register and the data to be written.
 	// On reset, the ov7670_config module reads the address and the data from the ov7670_rom. The camera can be configured manually through a keypad.
+	// t_exp = AEC[15:0] * t_row_interval
+	// AEC[15:0] = {AECHH[5:0] (0x07), AECH[7:0] (0x10), COM1[1:0] (0x04)}
+	// t_row_interval = 2*(787 + Dummy Pixels) * t_int_clk = 65.48 us
+	// t_int_clk = t_clk * (CLKRC[5:0] + 1) = 41.6 ns
 
 	localparam IDLE = 0;
 	localparam CHANGE_EXP1 = 1;
 	localparam WAIT_STATE = 2;
 	localparam CHANGE_EXP2 = 3;
+	localparam HIGH_EXP_VALUE = 8'h7F;
 
 
 	wire [7:0] rom_address;
@@ -35,7 +40,7 @@ module camera_config(
 	reg [7:0] conf_data;
 	reg [7:0] conf_addr;
 	reg config_start;
-	reg [1:0] exposure;
+	//reg [1:0] exposure;
 	reg q_hdr_en;
 	reg q_start;
 
@@ -43,7 +48,7 @@ module camera_config(
 		if(~rst_n) begin
 			STATE <= IDLE;
 			config_start <= 1'b1;
-			exposure <= 2'b0;
+			//exposure <= 2'b0;
 			q_hdr_en <= 1'b0;
 			q_start <= 1'b0;
 		end else begin
@@ -73,11 +78,11 @@ module camera_config(
 				CHANGE_EXP1: begin
 					if(done) begin
 						if(last_frame == 3'b0 || last_frame == 3'b011) begin
-							conf_data <= 8'h7F;
+							conf_data <= HIGH_EXP_VALUE;
 						end else if (last_frame == 3'b1 || last_frame == 3'b100) begin
-							conf_data <= 8'h2A;
+							conf_data <= HIGH_EXP_VALUE >> 2;
 						end else begin
-							conf_data <= 8'h54;
+							conf_data <= HIGH_EXP_VALUE >> 1;
 						end
 
 

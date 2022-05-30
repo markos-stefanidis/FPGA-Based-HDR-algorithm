@@ -11,6 +11,8 @@ module image_generator(
 	input [127:0] rd_data,
 	input rd_valid,
 
+	input hdr_rd_ack,
+	input hdr_wr_ack,
 	input ram_busy,
 
 	input [127:0] camera_data,
@@ -24,7 +26,6 @@ module image_generator(
 	output [127:0] wr_data
 );
 
-	reg [6:0] data_counter;
 	reg [24:0] rd_address_next;
 	reg all_read;
 	reg  last_req;
@@ -35,17 +36,20 @@ module image_generator(
 	reg [127:0] rd_data_low;
 	reg last_read;
 
+	reg q_camera_wr_req;
+
 	localparam N = 8;
 	localparam FP = 4;
 
 	always@(posedge clk_133M) begin
+		q_camera_wr_req <= camera_wr_req;
+
 		if(~rst_n_133M) begin
 			rd_address <= 25'b0;
 			rd_data_high <= 127'b0;
 			rd_data_mid <= 127'b0;
 			rd_data_low <= 127'b0;
 			rd_req <= 1'b0;
-			data_counter <= 7'b0;
 			last_req <= 1'b1;
 			all_read <= 1'b0;
 			reg_rd_req <= 1'b0;
@@ -86,7 +90,7 @@ module image_generator(
 
 				endcase
 				last_req <= 1'b0;
-			end else if(rd_req) begin
+			end else if(hdr_rd_ack) begin
 				rd_address <= rd_address_next;
 				rd_address_next <= rd_address + 4;
 				last_req <= ~last_req;
@@ -134,7 +138,7 @@ module image_generator(
 
 			end
 
-			if(camera_wr_req) begin
+			if(camera_wr_req && ~q_camera_wr_req) begin
 				case(last_frame)
 
 					3'b000: begin
@@ -164,20 +168,13 @@ module image_generator(
 
 			end
 
-			if(frame_done_133M || ((rd_req) && ~last_req) || camera_wr_req || reg_rd_req)  begin
-				if(~ram_busy) begin
-					rd_req <= 1'b1;
-					reg_rd_req <= 1'b0;
-				end else begin
-					rd_req <= 1'b0;
-					reg_rd_req <= 1'b1;
-				end
-			end else begin
+			if(frame_done_133M || ((hdr_rd_ack) && ~last_req) || (camera_wr_req && ~q_camera_wr_req))  begin
+				rd_req <= 1'b1;
+			end else if (hdr_rd_ack) begin
 				rd_req <= 1'b0;
-				reg_rd_req <= 1'b0;
 			end
 
-			all_read <= camera_wr_req;
+			all_read <= camera_wr_req && ~q_camera_wr_req;
 		end
 	end
 
@@ -407,7 +404,6 @@ module image_generator(
 
 		.frame_done (frame_done_25M),
 
-		.last_frame (last_frame),
 		.hdr_data (hdr_data),
 		.hdr_data_valid (hdr_data_valid)
 	);
@@ -422,6 +418,7 @@ module image_generator(
 		.hdr_data_valid (hdr_data_valid),
 		.frame_done (frame_done_133M),
 
+		.hdr_wr_ack (hdr_wr_ack),
 		.ram_busy (ram_busy),
 
 		.hdr_last_frame (hdr_last_frame),

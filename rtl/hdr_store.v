@@ -8,6 +8,7 @@ module hdr_store(
 	input hdr_data_valid,
 	input frame_done,
 
+	input hdr_wr_ack,
 	input ram_busy,
 
 	output reg hdr_last_frame,
@@ -53,27 +54,15 @@ module hdr_store(
 
 			hdr_last_frame <= (frame_done) ? (~hdr_last_frame) : hdr_last_frame;
 
-			if(q_rd_en) begin
-				if(~ram_busy) begin
-					wr_req <= 1'b1;
-					reg_wr_req <= 1'b0;
-				end else begin
-					wr_req <= 1'b0;
-					reg_wr_req <= 1'b1;
-				end
-			end else begin
-				if(reg_wr_req && ~ram_busy) begin
-					wr_req <= 1'b1;
-					reg_wr_req <= 1'b0;
-				end else begin
-					wr_req <= 1'b0;
-					reg_wr_req <= 1'b0;
-				end
+			if(rd_en) begin
+				wr_req <= 1'b1;
+			end else if (hdr_wr_ack) begin
+				wr_req <= 1'b0;
 			end
 
 			if (frame_done) begin
 				wr_address <= (hdr_last_frame) ? 25'h106800 : 25'hE1000;
-			end else if (wr_req) begin
+			end else if (hdr_wr_ack) begin
 				wr_address <= wr_address + 4;
 			end
 

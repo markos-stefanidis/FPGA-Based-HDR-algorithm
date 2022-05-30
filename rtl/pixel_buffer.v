@@ -8,81 +8,86 @@ module pixel_buffer(
 	input [127:0] data_mid,
 	input [127:0] data_low,
 	input rd_valid,
-	
-	output reg [127:0] pixel_data_high,
-	output reg [127:0] pixel_data_mid,
-	output reg [127:0] pixel_data_low,
+
+	output [127:0] pixel_data_high,
+	output [127:0] pixel_data_mid,
+	output [127:0] pixel_data_low,
 	output reg pixel_data_valid
 );
 
-	reg [127:0] high [0:1];
-	reg [127:0] mid [0:1];
-	reg [127:0] low [0:1];
+	wire rst;
+	wire rprst;
 
-	reg [1:0] start_pnt;
-	wire [1:0] start_pnt_grey;
-	reg [1:0] q_start_pnt;
-	reg [1:0] qq_start_pnt;
-	reg [1:0] end_pnt;
-	wire [1:0] end_pnt_grey;
-	reg [1:0] q_end_pnt;
-	reg [1:0] qq_end_pnt;
+	assign rst = ~rst_n_133M;
+	assign rprst = ~rst_n_25M;
 
-	wire empty;
-	wire full;
+	wire high_empty;
+	wire high_full;
 
-	always@(posedge clk_133M) begin
-		if(~rst_n_133M) begin
-			q_start_pnt <= 2'b0;	
-			qq_start_pnt <= 2'b0;	
+	wire mid_empty;
+	wire mid_full;
 
-			end_pnt <= 2'b0;
-		end else begin
-			q_start_pnt <= start_pnt_grey;
-			qq_start_pnt <= q_start_pnt;
+	wire low_empty;
+	wire low_full;
 
-			if(rd_valid) begin
-				if(~full) begin
-					high[end_pnt[0]] <= data_high;
-					mid[end_pnt[0]] <= data_mid;
-					low[end_pnt[0]] <= data_low;
+	reg data_ready;
+	reg q_data_ready;
 
-					end_pnt <= end_pnt + 1;
-				end
-			end
-		end
+	wire rd_en;
 
-	end
+	assign rd_en = data_ready && ~(q_data_ready);
 
 	always@(posedge clk_25M) begin
 		if(~rst_n_25M) begin
-			q_end_pnt <= 2'b0;	
-			qq_end_pnt <= 2'b0;	
-			
-			start_pnt <= 2'b0;
 			pixel_data_valid <= 1'b0;
+			data_ready <= 1'b0;
+			q_data_ready <= 1'b0;
 		end else begin
-			q_end_pnt <= end_pnt_grey;
-			qq_end_pnt <= q_end_pnt;
-
-			if(~empty) begin
-				pixel_data_high <= high[start_pnt[0]];
-				pixel_data_mid <= mid[start_pnt[0]];
-				pixel_data_low <= low[start_pnt[0]];
-
-				start_pnt <= start_pnt + 1;
-
-				pixel_data_valid <= 1'b1;
-			end else begin
-				pixel_data_valid <= 1'b0;
-			end
+			data_ready <= ~(high_empty || mid_empty || low_empty);
+			q_data_ready <= data_ready;
+			pixel_data_valid <= rd_en;
 		end
 	end
 
-	assign start_pnt_grey = (start_pnt >> 1) ^ start_pnt;
-	assign end_pnt_grey = (end_pnt >> 1) ^ end_pnt;
 
-	assign empty = (qq_start_pnt == end_pnt_grey);
-	assign full = ((start_pnt_grey[1] != qq_end_pnt[1]) && (start_pnt_grey[0] == qq_end_pnt[0]));
+
+	pixel_fifo fifo_high(
+		.Data (data_high),
+		.WrClock (clk_133M),
+		.RdClock (clk_25M),
+		.WrEn (rd_valid),
+		.RdEn (rd_en),
+		.Reset (rst),
+		.RPReset (rprst),
+		.Q (pixel_data_high),
+		.Empty (high_empty),
+		.Full (high_full)
+	);
+
+	pixel_fifo fifo_mid(
+		.Data (data_mid),
+		.WrClock (clk_133M),
+		.RdClock (clk_25M),
+		.WrEn (rd_valid),
+		.RdEn (rd_en),
+		.Reset (rst),
+		.RPReset (rprst),
+		.Q (pixel_data_mid),
+		.Empty (mid_empty),
+		.Full (mid_full)
+	);
+
+	pixel_fifo fifo_low(
+		.Data (data_low),
+		.WrClock (clk_133M),
+		.RdClock (clk_25M),
+		.WrEn (rd_valid),
+		.RdEn (rd_en),
+		.Reset (rst),
+		.RPReset (rprst),
+		.Q (pixel_data_low),
+		.Empty (low_empty),
+		.Full (low_full)
+	);
 
 endmodule

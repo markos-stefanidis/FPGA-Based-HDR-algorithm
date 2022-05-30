@@ -12,6 +12,7 @@ module row_buffer_vga(
 	input start_row,
 
 	input [2:0] last_frame,
+	input vga_ack,
 	input ram_busy,
 
 	input hdr_en,
@@ -97,7 +98,7 @@ module row_buffer_vga(
 						3'b101: rd_address <= 25'h96000; //LOW
 					endcase
 				end
-			end else if(rd_req) begin
+			end else if(vga_ack) begin
 				rd_address <= rd_address + 4;
 			end
 
@@ -108,20 +109,10 @@ module row_buffer_vga(
 			end
 
 
-			if((q_start_row_133M && ~qq_start_row_133M) || rd_valid || reg_rd_req) begin //If the ram is not ready to accept requests, reg_rd_req is asserted to indicate that the read request has not been made.
-				if(~ram_busy && ~row_done) begin
-					rd_req <= 1'b1;
-					reg_rd_req <= 1'b0;
-				end else if (~row_done) begin
-					rd_req <= 1'b0;
-					reg_rd_req <= 1'b1;
-				end else begin
-					rd_req <= 1'b0;
-					reg_rd_req <= 1'b0;
-				end
-			end else begin
+			if((q_start_row_133M && ~qq_start_row_133M) || rd_valid) begin //If the ram is not ready to accept requests, reg_rd_req is asserted to indicate that the read request has not been made.
+				rd_req <= ~row_done;
+			end else if (vga_ack) begin
 				rd_req <= 1'b0;
-				reg_rd_req <= 1'b0;
 			end
 
 

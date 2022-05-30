@@ -9,7 +9,6 @@ module tone_map(
 
 	input frame_done,
 
-	output [2:0] last_frame,
 	output reg [127:0] hdr_data,
 	output reg hdr_data_valid
 );
@@ -76,7 +75,6 @@ module tone_map(
 
 	reg gE_ready;
 	reg E_ready;
-	wire divE_ready;
 	wire D_ready;
 
 	wire [31:0] waE_red;
@@ -99,9 +97,6 @@ module tone_map(
 	wire aE_green_ready;
 	wire aE_blue_ready;
 
-	wire divE_red_ready;
-	wire divE_green_ready;
-	wire divE_blue_ready;
 
 	wire div_red_ready;
 	wire div_green_ready;

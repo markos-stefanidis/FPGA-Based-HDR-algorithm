@@ -8,9 +8,10 @@ module camera_store(
 
 	input [127:0] p_data,
 	input data_valid,
+	input camera_ack,
 	input ram_busy,
 
-	output reg [127:0] data,
+	output [127:0] data,
 	output reg [24:0] wr_address,
 	output reg wr_req
 );
@@ -19,7 +20,7 @@ module camera_store(
 	// This module is practically just a fifo used to cross from 24MHz clock domain to 133MHz clock domain
 
 	wire rst;
-	assign rst = ~rst_n_133M;
+	wire rprst;
 	wire [127:0] rd_data;
 	reg rd_en;
 	wire full;
@@ -31,9 +32,11 @@ module camera_store(
 	reg qqq_data_valid;
 	reg q_rd_en;
 
+	assign rst = ~rst_n_24M;
+	assign rprst = ~rst_n_133M;
+
 	always@(posedge clk_133M) begin
 		if(~rst_n_133M) begin
-			data <= 127'b0;
 			wr_address <= 25'b0;
 			wr_req <= 1'b0;
 			q_data_valid <= 1'b0;
@@ -58,30 +61,14 @@ module camera_store(
 					3'b100: wr_address <= 25'h96000;
 					3'b101: wr_address <= 25'hBB800;
 				endcase
-			end else if(wr_req) begin
+			end else if(camera_ack) begin
 				wr_address <= wr_address + 4;
 			end
 
-			if(~ram_busy) begin
-				data <= rd_data;
-			end
-
-			if(q_rd_en) begin // If the ram is not ready to accept requests, then reg_wr_req is asserted indicating that the write request has not been made.
-				if(~ram_busy) begin
-					wr_req <= 1'b1;
-					reg_wr_req <= 1'b0;
-				end else begin
-					wr_req <= 1'b0;
-					reg_wr_req <= 1'b1;
-				end
-			end else begin
-				if(reg_wr_req && ~ram_busy) begin
-					wr_req <= 1'b1;
-					reg_wr_req <= 1'b0;
-				end else begin
-					wr_req <= 1'b0;
-					reg_wr_req <= 1'b0;
-				end
+			if(rd_en) begin
+				wr_req <= 1'b1;
+			end else if (camera_ack) begin
+				wr_req <= 1'b0;
 			end
 		end
 	end
@@ -93,8 +80,8 @@ module camera_store(
 		.WrEn (data_valid),
 		.RdEn (rd_en),
 		.Reset (rst),
-		.RPReset (rst),
-		.Q (rd_data),
+		.RPReset (rprst),
+		.Q (data),
 		.Empty (empty),
 		.Full (full)
 	);

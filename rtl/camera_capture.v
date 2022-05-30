@@ -53,7 +53,7 @@ module camera_capture(
 			case(STATE)
 
 				IDLE: begin
-					STATE <= (!vsync) ? CAPTURE : IDLE;
+					STATE <= (!vsync && q_vsync) ? CAPTURE : IDLE;
 					if(hdr_en) begin
 						exp_done <= (!vsync) ? 1'b0 : exp_done;
 					end else begin

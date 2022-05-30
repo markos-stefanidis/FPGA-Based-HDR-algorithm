@@ -58,15 +58,12 @@ module hdr
 	wire [N-1:0] w_blue_low;
 
 	wire lut_rst;
-	wire [N-1:0] w_lE_red;
-	wire [N-1:0] w_lE_green;
-	wire [N-1:0] w_lE_blue;
 
 	assign lut_rst = ~rst_n;
 
-	localparam ln_exp_high = 8'd43;
-	localparam ln_exp_mid = 8'd50;
-	localparam ln_exp_low = 8'd61;
+	localparam ln_exp_high = 8'd54;
+	localparam ln_exp_mid = 8'd65;
+	localparam ln_exp_low = 8'd76;
 
 	g_red_lut G_red_high(
 		.clk (clk),

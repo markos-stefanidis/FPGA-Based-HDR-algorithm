@@ -1,6 +1,5 @@
 module sccb(
 	input clk_25M,
-	//input clk_100K,
 	input sccb_start,
 	input rst_n,
 	input[7:0] address,
@@ -9,7 +8,7 @@ module sccb(
 	output reg scl,
 	output reg ready
 );
-	
+
 	// This module implements the Seraial Camera Controll Bus (SCCB), a variation of I2C.
 	// In order to write to the camera register, the camera write address (0x42) must first be transmited through the serail bus. Then the register address is transmited and finally the data to be written.
 	// After each of theese 3 bytes are transmited, a don't care bit must be transmited before the next byte. A 0 is appended to all 3 bytes for that reason.
@@ -17,17 +16,15 @@ module sccb(
 	//https://www.waveshare.com/w/upload/1/14/OmniVision_Technologies_Seril_Camera_Control_Bus%28SCCB%29_Specification.pdf
 
 	reg	[3:0] STATE;
-	reg	[3:0] RETURN_STATE; 
+	reg	[3:0] RETURN_STATE;
 	reg	[8:0] r_address;
 	reg	[8:0] r_data;
 	reg	[10:0] delay_count;
 	reg	[3:0] byte_index;
 	reg [1:0] byte_counter;
-	
-	reg prev_clock;
-	
+
 	localparam cam_address = 9'h84;
-	
+
 	localparam IDLE = 0;
 	localparam INIT = 1;
 	localparam START = 2;
@@ -38,24 +35,20 @@ module sccb(
 	localparam STOP_SDA = 7;
 	localparam STOP_SCCB = 8;
 	localparam TIMER = 9;
-	
-	
-	
+
+
+
 	always@(posedge clk_25M) begin
 		if (~rst_n) begin
 			scl <= 1'b1;
 			sda <= 1'b1;
 			ready <= 1'b1;
 			STATE <= IDLE;
-			prev_clock <= 0;
 			delay_count <= 11'b0;
 			byte_index <= 4'b1000;
 			byte_counter <= 2'b0;
 		end else begin
-			
-				
-			//prev_clock <= clk_100K;
-				
+
 			case (STATE)
 				IDLE: begin
 					if (sccb_start) begin
@@ -70,14 +63,14 @@ module sccb(
 						ready <= 1'b1;
 					end
 				end
-				
+
 				INIT: begin
 					STATE <= TIMER;
 					RETURN_STATE <= START;
 					sda <= 1'b0;
 					delay_count <= 11'd124; //Delay 5 us
 				end
-				
+
 				START: begin
 					scl <= 1'b0;
 					STATE <= TIMER;
@@ -86,34 +79,34 @@ module sccb(
 					byte_index <= 4'b1000;
 					byte_counter <= 2'b0;
 				end
-				
+
 				BYTE_1: begin
 					case(byte_counter)
 						2'b00: begin
 							sda <= cam_address[byte_index];
 						end
-						
+
 						2'b01: begin
 							sda <= r_address[byte_index];
 						end
-						
+
 						2'b10: begin
 							sda <= r_data[byte_index];
 						end
-					
+
 					endcase
 					STATE <= TIMER;
 					RETURN_STATE <= BYTE_2;
 					delay_count <= 11'd62; //Delay 2.5us
 				end
-				
+
 				BYTE_2: begin
 					scl <= 1'b1;
 					STATE <= TIMER;
 					RETURN_STATE <= BYTE_3;
 					delay_count <= 11'd124;
 				end
-				
+
 				BYTE_3: begin
 					scl <= 1'b0;
 					STATE <= TIMER;
@@ -122,36 +115,36 @@ module sccb(
 					byte_counter <= (byte_index == 0) ? byte_counter + 1 : byte_counter;
 					byte_index <= (byte_index == 0) ? 4'b1000 : byte_index - 1;
 				end
-								
-				
+
+
 				STOP_SCL: begin
 					scl <= 1'b1;
 					STATE <= TIMER;
 					RETURN_STATE <= STOP_SDA;
 					delay_count <= 11'd124; //Delay 5us
 				end
-				
+
 				STOP_SDA: begin
 					sda <= 1'b1;
 					STATE <= TIMER;
 					RETURN_STATE <= STOP_SCCB;
 					delay_count <= 11'd248; // Delay 1.28us
 				end
-				
+
 				STOP_SCCB: begin
 					sda <= 1'b1;
 					STATE <= IDLE;
 					ready <= 1'b1;
-					
+
 				end
-				
+
 				TIMER: begin
 					STATE <= (delay_count == 0) ? RETURN_STATE : TIMER;
 					delay_count <= delay_count - 1;
 				end
-			
+
 			endcase
-				
+
 		end
 	end
 endmodule
