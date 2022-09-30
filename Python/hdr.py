@@ -16,17 +16,17 @@ g_red =[]
 g_green =[]
 g_blue =[]
 
-with open('g_red.txt', 'r') as f:
+with open('g_red', 'r') as f:
     for y in f.read().split('\n'):
         if y:
             g_red.append(float(y))
 
-with open('g_green.txt', 'r') as f:
+with open('g_green', 'r') as f:
     for y in f.read().split('\n'):
         if y:
             g_green.append(float(y))
 
-with open('g_blue.txt', 'r') as f:
+with open('g_blue', 'r') as f:
     for y in f.read().split('\n'):
         if y:
             g_blue.append(float(y))
@@ -88,6 +88,8 @@ for v in range(480):
 
 #print(lD)
 
+cv2.imshow('Python_hdr', numpy.uint8(lD))
+cv2.waitKey()
 filename = 'Images/image_' + str(n) + '_hdr_python.png'
 cv2.imwrite(filename, numpy.uint8(lD))
 cv2.waitKey(0)
